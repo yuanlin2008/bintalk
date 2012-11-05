@@ -21,15 +21,6 @@ find_program(FLEX flex)
 # find bison
 find_program(BISON bison)
 
-# find boost lib
-if(WIN32)
-	add_definitions(-DBOOST_ALL_NO_LIB)
-	set(Boost_USE_STATIC_LIBS TRUE)
-endif(WIN32)
-find_package(Boost 1.4.0 COMPONENTS system filesystem program_options REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
-
 # bintalk.l
 add_custom_command(
 	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
@@ -83,7 +74,6 @@ source_group( gen FILES ${GEN_FILES})
 source_group( misc FILES ${MISC_FILES})
 
 add_executable(bintalk ${PARSER_FILES} ${SPEC_FILES} ${GEN_FILES} ${MISC_FILES})
-target_link_libraries(bintalk ${Boost_LIBRARIES})
 
 # install bintalk
 install(TARGETS bintalk DESTINATION bin)
