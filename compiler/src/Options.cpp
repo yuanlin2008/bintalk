@@ -3,8 +3,6 @@
 #include "CodeGenerator.h"
 #include <iostream>
 #include <sstream>
-#define BOOST_FILESYSTEM_VERSION 2
-#include <boost/filesystem/path.hpp>
 
 Options gOptions;
 
