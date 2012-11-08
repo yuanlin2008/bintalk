@@ -2,6 +2,7 @@
 #include "Options.h"
 #include "CodeGenerator.h"
 #include <cstdio>
+#include <cstring>
 
 Options gOptions;
 
