@@ -4,7 +4,7 @@
 namespace bintalk
 {
 
-void MemoryWriter::write(void* data, size_t len)
+void MemoryWriter::write(const void* data, size_t len)
 {
 	if(ptr_ + len > data_->size())
 		data_->resize(ptr_ + len);

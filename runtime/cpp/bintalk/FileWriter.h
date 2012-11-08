@@ -12,7 +12,7 @@ class FileWriter : public BinaryWriter
 {
 public:
 	FileWriter(FILE* f):f_(f){}
-	virtual void write(void* data, size_t len);
+	virtual void write(const void* data, size_t len);
 private:
 	FILE* f_;
 };

@@ -13,7 +13,7 @@ namespace bintalk
 		MemoryWriter(BINARY* d, size_t p = 0):data_(d),ptr_(p) {}
 		BINARY*	data()	{ return data_; }
 		size_t	ptr()	{ return ptr_; }
-		virtual void write(void* data, size_t len);
+		virtual void write(const void* data, size_t len);
 	private:
 		BINARY*		data_;
 		size_t		ptr_;
