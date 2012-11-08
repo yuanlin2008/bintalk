@@ -1,19 +1,13 @@
 ########################################################################
 # bintalk compiler
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
-project(bintalk)
 
-# Add binary tree to the search path for include files.
-include_directories(${PROJECT_SOURCE_DIR})
+# to find "Config.h"
 include_directories(${PROJECT_BINARY_DIR})
+# to find generated files.
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# The version number.
-set(BINTALK_VERSION_MAJOR 1)
-set(BINTALK_VERSION_MINOR 0)
-
-# configure a header file to pass some of the CMake settings.
-configure_file("Config.h.in" "Config.h")
 
 # find flex
 find_program(FLEX flex)
