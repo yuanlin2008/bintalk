@@ -43,8 +43,7 @@ bool Context::build()
 	curFilename_ = gOptions.inputFN_;
 
 	// 开始分析文件.
-	int r;
-	if(r = yyparse())
+	if(yyparse())
 	{
 		fclose(yyin);
 		return false;

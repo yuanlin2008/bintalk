@@ -1,6 +1,7 @@
 #ifndef __CodeFile_h__
 #define __CodeFile_h__
 
+#include <cstdio>
 #include <string>
 
 class CodeFile
