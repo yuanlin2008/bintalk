@@ -27,3 +27,6 @@ set(CPP_FILES
 add_library(bintalk_cpp STATIC ${HDR_FILES} ${CPP_FILES})
 install(TARGETS bintalk_cpp ARCHIVE DESTINATION lib)
 install(FILES ${HDR_FILES} DESTINATION include/bintalk)
+
+# bintalk python package.
+configure_file(py/setup.py.in ${CMAKE_CURRENT_SOURCE_DIR}/py/setup.py)
