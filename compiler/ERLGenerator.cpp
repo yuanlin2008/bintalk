@@ -191,7 +191,7 @@ static void generateServiceStubModule(Service* s)
 
 static void generateServiceDispatcherMethod(CodeFile& f, Method* m, bool isLast)
 {
-	f.output("dispatch(%d, B0, M) ->", m->mid_);
+	f.output("dispatch(%d, B0, M, S) ->", m->mid_);
 	f.indent();
 	int bNum = 0;
 	for(size_t i = 0; i < m->fields_.size(); i++)
@@ -206,14 +206,14 @@ static void generateServiceDispatcherMethod(CodeFile& f, Method* m, bool isLast)
 			bNum);
 		bNum++;
 	}
-	f.listBegin(",", false, "M:\'%s\'(", m->getNameC());
+	f.listBegin(",", false, "S1 = M:\'%s\'(", m->getNameC());
 	for(size_t i = 0; i < m->fields_.size(); i++)
 	{
 		Field& field = m->fields_[i];
 		f.listItem("V_%s", field.getNameC());
 	}
 	f.listEnd("),");
-	f.output("B%d%s", bNum, isLast?".":";");
+	f.output("{B%d, S1}%s", bNum, isLast?".":";");
 	f.recover();
 }
 
@@ -225,7 +225,7 @@ static void generateServiceDispatcherModule(Service* s)
 	CodeFile f(gOptions.output_ + s->name_ + "Dispatcher.erl");
 	f.output("-module(\'%sDispatcher\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
-	f.output("-export([behaviour_info/1, dispatch/2]).");
+	f.output("-export([behaviour_info/1, dispatch/3]).");
 
 	f.output("%%%% callbacks.");
 	f.output("behaviour_info(callbacks) ->");
@@ -243,10 +243,10 @@ static void generateServiceDispatcherModule(Service* s)
 	f.output("behaviour_info(_) -> undefined.");
 
 	f.output("%%%% dispatch.");
-	f.output("dispatch(B, M) when is_binary(B) ->");
+	f.output("dispatch(B, M, S) when is_binary(B) ->");
 	f.indent();
 	f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
-	f.output("dispatch(MID, BR, M).");
+	f.output("dispatch(MID, BR, M, S).");
 	f.recover();
 
 	for(size_t i = 0; i < methods.size(); i++)
