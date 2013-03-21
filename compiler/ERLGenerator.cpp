@@ -174,8 +174,8 @@ static void generateServiceStubModule(Service* s)
 	std::vector<Method*> methods;
 	s->getAllMethods(methods);
 
-	CodeFile f(gOptions.output_ + s->name_ + "Stub.erl");
-	f.output("-module(\'%sStub\').", s->getNameC());
+	CodeFile f(gOptions.output_ + s->name_ + "_stub.erl");
+	f.output("-module(\'%s_stub\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.listBegin(",", true, "-export([");
 	for(size_t i = 0; i < methods.size(); i++)
@@ -212,6 +212,7 @@ static void generateServiceDispatcherMethod(CodeFile& f, Method* m, bool isLast)
 		Field& field = m->fields_[i];
 		f.listItem("V_%s", field.getNameC());
 	}
+	f.listItem("S");
 	f.listEnd("),");
 	f.output("{B%d, S1}%s", bNum, isLast?".":";");
 	f.recover();
@@ -222,8 +223,8 @@ static void generateServiceDispatcherModule(Service* s)
 	std::vector<Method*> methods;
 	s->getAllMethods(methods);
 
-	CodeFile f(gOptions.output_ + s->name_ + "Dispatcher.erl");
-	f.output("-module(\'%sDispatcher\').", s->getNameC());
+	CodeFile f(gOptions.output_ + s->name_ + "_dispatcher.erl");
+	f.output("-module(\'%s_dispatcher\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.output("-export([behaviour_info/1, dispatch/3]).");
 
@@ -236,7 +237,7 @@ static void generateServiceDispatcherModule(Service* s)
 		Method* method = methods[i];
 		f.listItem("{%s, %d}", 
 			method->getNameC(), 
-			method->fields_.size());
+			method->fields_.size() + 1);
 	}
 	f.listEnd("];");
 	f.recover();
