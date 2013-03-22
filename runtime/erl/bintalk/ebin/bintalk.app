@@ -3,9 +3,9 @@
 	{vsn, "1.0.0"},
 	{modules, [
 		bintalk_prot_reader,
-		bintalk_prot_writer,
+		bintalk_prot_writer
 		]},
 	{registered, []},
-	{applications, [kernel, stdlib ]},
+	{applications, [kernel, stdlib]},
 	{env, []}
 ]}.

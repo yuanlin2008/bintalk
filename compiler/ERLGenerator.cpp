@@ -189,7 +189,7 @@ static void generateServiceStubModule(Service* s)
 		generateServiceStubMethod(f, methods[i]);
 }
 
-static void generateServiceDispatcherMethod(CodeFile& f, Method* m, bool isLast)
+static void generateServiceProxyMethod(CodeFile& f, Method* m, bool isLast)
 {
 	f.output("dispatch(%d, B0, M, S) ->", m->mid_);
 	f.indent();
@@ -218,13 +218,13 @@ static void generateServiceDispatcherMethod(CodeFile& f, Method* m, bool isLast)
 	f.recover();
 }
 
-static void generateServiceDispatcherModule(Service* s)
+static void generateServiceProxyModule(Service* s)
 {
 	std::vector<Method*> methods;
 	s->getAllMethods(methods);
 
-	CodeFile f(gOptions.output_ + s->name_ + "_dispatcher.erl");
-	f.output("-module(\'%s_dispatcher\').", s->getNameC());
+	CodeFile f(gOptions.output_ + s->name_ + "_proxy.erl");
+	f.output("-module(\'%s_proxy\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.output("-export([behaviour_info/1, dispatch/3]).");
 
@@ -251,7 +251,7 @@ static void generateServiceDispatcherModule(Service* s)
 	f.recover();
 
 	for(size_t i = 0; i < methods.size(); i++)
-		generateServiceDispatcherMethod(f, methods[i], i == methods.size()-1);
+		generateServiceProxyMethod(f, methods[i], i == methods.size()-1);
 }
 
 void ERLGenerator::generate()
@@ -280,7 +280,7 @@ void ERLGenerator::generate()
 		else if (definition->getService())
 		{
 			generateServiceStubModule(definition->getService());
-			generateServiceDispatcherModule(definition->getService());
+			generateServiceProxyModule(definition->getService());
 		}
 	}
 
