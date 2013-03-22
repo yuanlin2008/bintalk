@@ -89,7 +89,7 @@ static void generateStructSerializeCode(CodeFile& f, Struct* s)
 	f.indent();
 	std::vector<Field*> fields;
 	s->getAllFields(fields);
-	f.listBegin(",", true, "iolist_to_binary([");
+	f.listBegin(",", true, "[");
 	for(size_t i = 0; i < fields.size(); i++)
 	{
 		Field* field = fields[i];
@@ -99,7 +99,7 @@ static void generateStructSerializeCode(CodeFile& f, Struct* s)
 			s->getNameC(),
 			field->getNameC());
 	}
-	f.listEnd("]).");
+	f.listEnd("].");
 	f.recover();
 }
 
@@ -155,7 +155,7 @@ static void generateServiceStubMethod(CodeFile& f, Method* m)
 	}
 	f.listEnd(") ->");
 	f.indent();
-	f.listBegin(",", true, "iolist_to_binary([");
+	f.listBegin(",", true, "[");
 	f.listItem("bintalk_prot_writer:write_mid(%d)", m->mid_);
 	for(size_t i = 0; i < m->fields_.size(); i++)
 	{
@@ -165,7 +165,7 @@ static void generateServiceStubMethod(CodeFile& f, Method* m)
 			field.isArray()?"true":"false",
 			field.getNameC());
 	}
-	f.listEnd("]).");
+	f.listEnd("].");
 	f.recover();
 }
 
