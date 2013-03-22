@@ -29,7 +29,7 @@ write(uint8, false, V) -> <<V:8/little-unsigned-integer>>;
 write(bool, false, true) -> <<1:8>>;
 write(bool, false, false) -> <<0:8>>;
 write(string, false, V) -> iolist_to_binary([write_dyn_size(length(V)),V]);
-write(binary, true, V) -> iolist_to_binary([write_dyn_size(length(V)),V]);
+write(binary, false, V) -> iolist_to_binary([write_dyn_size(byte_size(V)),V]);
 write(enum, false, V) -> write(uint8, false, V);
 write(UT, false, V) -> UT:serialize(V).
 
