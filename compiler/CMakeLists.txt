@@ -1,39 +1,25 @@
 ########################################################################
 # bintalk compiler
 ########################################################################
-
 # to find "Config.h"
 include_directories(${PROJECT_BINARY_DIR})
+
+# find bison & flex.
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
+BISON_TARGET(BINTALK_PARSER bintalk.y ${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.cpp)
+FLEX_TARGET(BINTALK_SCANNER bintalk.l ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp)
+ADD_FLEX_BISON_DEPENDENCY(BINTALK_SCANNER BINTALK_PARSER)
+
 # to find generated files.
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-
-# find flex
-find_program(FLEX flex)
-
-# find bison
-find_program(BISON bison)
-
-# bintalk.l
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
-	COMMAND flex -o${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp ${CMAKE_CURRENT_SOURCE_DIR}/bintalk.l 
-	MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/bintalk.l 
-	)
-
-# bintalk.y
-add_custom_command(
-	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.cpp ${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.hpp
-	COMMAND bison -d -o ${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.cpp ${CMAKE_CURRENT_SOURCE_DIR}/bintalk.y 
-	MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/bintalk.y 
-	)
+# make generated files include source files.
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # sources.
 set(PARSER_FILES
-	${CMAKE_CURRENT_BINARY_DIR}/lex.yy.cpp
-	${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.hpp
-	${CMAKE_CURRENT_BINARY_DIR}/bintalk.tab.cpp
+	${BISON_BINTALK_PARSER_OUTPUTS}
+	${FLEX_BINTALK_SCANNER_OUTPUTS}
 	bintalk.y
 	bintalk.l
 	)
