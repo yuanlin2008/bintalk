@@ -170,6 +170,7 @@ static void generateProxyDecl(CodeFile& f, Service* s)
 		f.output("class %sProxy", s->getNameC());
 	f.indent("{");
 	f.output("public:");
+	f.output("typedef class %sDispatcher Dispatcher;", s->getNameC());
 	for(size_t i = 0; i < s->methods_.size(); i++)	
 		generateProxyMethodDecl(f, s->methods_[i]);
 	f.recover("};");
@@ -183,6 +184,7 @@ static void generateDispatcherDecl(CodeFile& f, Service* s)
 		f.output("class %sDispatcher", s->getNameC());
 	f.indent("{");
 	f.output("public:");
+	f.output("typedef class %sProxy Proxy;", s->getNameC());
 	f.output("static bool dispatch(bintalk::BinaryReader* reader, %sProxy* p);", s->getNameC());
 	f.output("protected:");
 	for(size_t i = 0; i < s->methods_.size(); i++)
