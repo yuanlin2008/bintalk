@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "ProtocolReader.h"
 
 namespace bintalk
@@ -5,14 +6,24 @@ namespace bintalk
 
 bool ProtocolReader::readMID(BinaryReader* r, MID& mid)
 {
+#if BINTALK_BIG_ENDIAN
+	if(!r->read(&mid, sizeof(MID))) return false;
+	mid = swapEndian(mid);
+	return true;
+#endif //BINTALK_BIG_ENDIAN
 	return r->read(&mid, sizeof(MID));
 }
 
-#define BINTALK_PROTOCOLREADER_SINGLE_IMP(T)\
-bool ProtocolReader::read##T(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)\
-{\
-	return r->read(&v, sizeof(T));\
-}
+#if BINTALK_BIG_ENDIAN
+	#define BINTALK_PROTOCOLREADER_SINGLE_IMP(T)\
+		bool ProtocolReader::read##T(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)\
+		{if(!r->read(&v, sizeof(T))) return false;\
+		v = swapEndian<T>(v); return true;\ }
+#else //BINTALK_BIG_ENDIAN
+	#define BINTALK_PROTOCOLREADER_SINGLE_IMP(T)\
+		bool ProtocolReader::read##T(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)\
+		{ return r->read(&v, sizeof(T)); }
+#endif //BINTALK_BIG_ENDIAN
 
 #define BINTALK_PROTOCOLREADER_ARRAY_IMP(T)\
 bool ProtocolReader::read##T##A(BinaryReader* r, std::vector<T>& v, UINT32 maxArray, UINT32 maxValue)\

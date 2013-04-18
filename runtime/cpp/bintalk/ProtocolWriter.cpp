@@ -1,3 +1,4 @@
+#include "Config.h"
 #include "ProtocolWriter.h"
 
 namespace bintalk
@@ -5,14 +6,22 @@ namespace bintalk
 
 void ProtocolWriter::writeMID(BinaryWriter* w, MID mid)
 {
+#if BINTALK_BIG_ENDIAN
+	mid = swapEndian<MID>(mid);
+#endif//BINTALK_BIG_ENDIAN
 	w->write(&mid, sizeof(MID));
 }
 
-#define BINTALK_PROTOCOLWRITER_SINGLE_IMP(T)\
-void ProtocolWriter::write##T(BinaryWriter* w, const T& v)\
-{\
-	w->write(&v, sizeof(T));\
-}
+#if BINTALK_BIG_ENDIAN
+	#define BINTALK_PROTOCOLWRITER_SINGLE_IMP(T)\
+		void ProtocolWriter::write##T(BinaryWriter* w, const T& v) \
+		{ T vv = swapEndian<T>(v); w->write(&vv, sizeof(T)); }
+#else //BINTALK_BIG_ENDIAN 
+	#define BINTALK_PROTOCOLWRITER_SINGLE_IMP(T)\
+		void ProtocolWriter::write##T(BinaryWriter* w, const T& v) \
+		{ w->write(&v, sizeof(T)); }
+#endif //BINTALK_BIG_ENDIAN 
+
 #define BINTALK_PROTOCOLWRITER_ARRAY_IMP(T)\
 void ProtocolWriter::write##T##A(BinaryWriter* w, const std::vector<T>& v)\
 {\

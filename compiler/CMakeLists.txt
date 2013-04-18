@@ -1,8 +1,6 @@
 ########################################################################
 # bintalk compiler
 ########################################################################
-# to find "Config.h"
-include_directories(${PROJECT_BINARY_DIR})
 
 # find bison & flex.
 find_package(BISON REQUIRED)
