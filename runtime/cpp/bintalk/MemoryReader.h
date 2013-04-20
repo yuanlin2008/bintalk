@@ -6,18 +6,18 @@
 namespace bintalk
 {
 
-/** Read binary data from memory. */
+/** Read binary data from a memory buffer. */
 class MemoryReader : public BinaryReader
 {
-public:
-	MemoryReader(BINARY* d, size_t p = 0):data_(d),ptr_(p) {}
-	BINARY*	data()	{ return data_; }
-	size_t	ptr()	{ return ptr_; }
+public: 
+	MemoryReader (void* data, size_t len);
 	virtual bool read(void* data, size_t len);
 private:
-	BINARY*		data_;
-	size_t		ptr_;
+	char*	data_;
+	size_t	len_;
+	size_t	ptr_;
 };
+
 
 }
 
