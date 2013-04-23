@@ -218,15 +218,16 @@ static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc)
 
 static void generateStructImp(CodeFile& f, Struct* s)
 {
-	f.listBegin(",", true, "%s::%s():", s->getNameC(), s->getNameC());
+	f.output("%s::%s()", s->getNameC(), s->getNameC());
+	f.indent("{");
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
 		if(!getFieldCppDefault(field))
 			continue;
-		f.listItem("%s(%s)", field.getNameC(), getFieldCppDefault(field));
+		f.output("%s = %s;", field.getNameC(), getFieldCppDefault(field));
 	}
-	f.listEnd("{}");
+	f.recover("}");
 	f.output("void %s::serialize(bintalk::BinaryWriter* __w__) const", s->getNameC());
 	f.indent("{");
 	if(s->super_)
