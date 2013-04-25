@@ -243,15 +243,26 @@ static void generateServiceProxyModule(Service* s)
 	f.recover();
 	f.output("behaviour_info(_) -> undefined.");
 
-	f.output("%%%% dispatch.");
-	f.output("dispatch(B, M, S) when is_binary(B) ->");
-	f.indent();
-	f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
-	f.output("dispatch(MID, BR, M, S).");
-	f.recover();
-
-	for(size_t i = 0; i < methods.size(); i++)
-		generateServiceProxyMethod(f, methods[i], i == methods.size()-1);
+	if(methods.size())
+	{
+		f.output("%%%% dispatch.");
+		f.output("dispatch(B, M, S) when is_binary(B) ->");
+		f.indent();
+		f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
+		f.output("dispatch(MID, BR, M, S).");
+		f.recover();
+		for(size_t i = 0; i < methods.size(); i++)
+			generateServiceProxyMethod(f, methods[i], i == methods.size()-1);
+	}
+	else
+	{
+		// no method yet.
+		f.output("%%%% dispatch.");
+		f.output("dispatch(B, _M, S) when is_binary(B) ->");
+		f.indent();
+		f.output("{B, S}.");
+		f.recover();
+	}
 }
 
 void ERLGenerator::generate()
