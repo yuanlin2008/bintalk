@@ -58,18 +58,15 @@ static const char* getFieldInnerTypeName(Field& f)
 	return NULL;
 }
 
-static const char* getFieldTypeName(Field& f)
+static void getFieldTypeName(Field& f, std::string& name)
 {
-	static std::string name;
 	name = getFieldInnerTypeName(f);
 	if(f.isArray())
 		name = "List<" + name + ">";
-	return name.c_str();
 }
 
-static const char* getFieldInnerDefault(Field& f)
+static void getFieldInnerDefault(Field& f, std::string& name)
 {
-	static std::string name;
 	switch(f.type_)
 	{
 	case Field::FT_INT64:
@@ -88,20 +85,19 @@ static const char* getFieldInnerDefault(Field& f)
 	case Field::FT_USER: name = "new "; name += f.userType_->name_; name += "()"; break;
 	case Field::FT_ENUM: name = "("; name += f.userType_->name_; name += ")(0)"; break;
 	}
-	return name.c_str();
 }
-static const char* getFieldDefault(Field& f)
+static void getFieldDefault(Field& f, std::string& name)
 {
-	static std::string name;
 	if(f.isArray())
 	{
 		name = "new ";
-		name += getFieldTypeName(f);
+		std::string tn;
+		getFieldTypeName(f, tn);
+		name += tn;
 		name += "()";
 	}
 	else
-		name = getFieldInnerDefault(f);
-	return name.c_str();
+		getFieldInnerDefault(f, name);
 }
 
 static void generateFieldSCode(CodeFile& f, Field& field)
@@ -134,9 +130,9 @@ static void generateFieldDSCode(CodeFile& f, Field& field)
 		f.output("if (!bintalk.ProtocolReader.readDynSize(__r__, out s) || s > 0X%X) return false;", field.maxArray_);
 		f.output("for(uint i = 0; i < s; i++)");
 		f.indent("{");
-		f.output("%s vi = %s;", 
-			getFieldInnerTypeName(field),
-			getFieldInnerDefault(field));
+		std::string idft;
+		getFieldInnerDefault(field, idft);
+		f.output("%s vi = %s;", getFieldInnerTypeName(field), idft.c_str());
         f.output("if (!bintalk.ProtocolReader.read(__r__, ref vi, 0X%X)) return false;", field.maxValue_);
 		f.output("%s.Add(vi);", field.getNameC());
 		f.recover("}");
@@ -163,10 +159,14 @@ static void generateStruct(CodeFile& f, Struct* s)
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
+		std::string tn;
+		getFieldTypeName(field, tn);
+		std::string dft;
+		getFieldDefault(field, dft);
 		f.output("public %s %s= %s;", 
-			getFieldTypeName(field),
+			tn.c_str(),
 			field.getNameC(),
-			getFieldDefault(field));
+			dft.c_str());
 	}
 	// serialize code.
 	f.output("public %s void serialize(bintalk.IWriter __w__)", s->super_?"new":"");
@@ -210,9 +210,9 @@ static void generateStubMethod(CodeFile& f, Service* s, Method& m)
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
-		f.listItem("%s %s", 
-			getFieldTypeName(field), 
-			field.getNameC());
+		std::string tn;
+		getFieldTypeName(field, tn); 
+		f.listItem("%s %s", tn.c_str(), field.getNameC());
 	}
 	f.listEnd(")");
 	f.indent("{");
@@ -248,9 +248,9 @@ static void generateProxyAbstractMethod(CodeFile& f, Method& m)
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
-		f.listItem("%s %s",
-			getFieldTypeName(field),
-			field.getNameC());
+		std::string tn;
+		getFieldTypeName(field, tn); 
+		f.listItem("%s %s",tn.c_str(), field.getNameC());
 	}
 	f.listEnd(");");
 }
@@ -274,10 +274,14 @@ static void generateMethodDispatcher(CodeFile& f, Service* s, Method& m)
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
+		std::string tn;
+		getFieldTypeName(field, tn); 
+		std::string dft;
+		getFieldDefault(field, dft);
 		f.output("%s %s= %s;", 
-			getFieldTypeName(field),
+			tn.c_str(),
 			field.getNameC(),
-			getFieldDefault(field));
+			dft.c_str());
 	}
 	generateFieldContainerDSCode(f, &m);
 	f.listBegin(",", false, "return __p__.%s(", m.getNameC());
