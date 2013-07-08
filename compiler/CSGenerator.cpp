@@ -106,7 +106,7 @@ static void generateFieldSCode(CodeFile& f, Field& field)
 	{
 		f.indent("{");
 		f.output("bintalk.ProtocolWriter.writeDynSize(__w__, (uint)%s.Count);", field.getNameC());
-		f.output("foreach(%s vi in %s) bintalk.ProtocolWriter.write(__w__, vi);",
+		f.output("foreach(%s __vi__ in %s) bintalk.ProtocolWriter.write(__w__, __vi__);",
 			getFieldInnerTypeName(field),
 			field.getNameC());
 		f.recover("}");
@@ -126,15 +126,15 @@ static void generateFieldDSCode(CodeFile& f, Field& field)
 	if(field.isArray())
 	{
 		f.indent("{");
-		f.output("uint s;");
-		f.output("if (!bintalk.ProtocolReader.readDynSize(__r__, out s) || s > 0X%X) return false;", field.maxArray_);
-		f.output("for(uint i = 0; i < s; i++)");
+		f.output("uint __s__;");
+		f.output("if (!bintalk.ProtocolReader.readDynSize(__r__, out __s__) || __s__ > 0X%X) return false;", field.maxArray_);
+		f.output("for(uint __i__ = 0; __i__ < __s__; __i__++)");
 		f.indent("{");
 		std::string idft;
 		getFieldInnerDefault(field, idft);
-		f.output("%s vi = %s;", getFieldInnerTypeName(field), idft.c_str());
-        f.output("if (!bintalk.ProtocolReader.read(__r__, ref vi, 0X%X)) return false;", field.maxValue_);
-		f.output("%s.Add(vi);", field.getNameC());
+		f.output("%s __vi__ = %s;", getFieldInnerTypeName(field), idft.c_str());
+        f.output("if (!bintalk.ProtocolReader.read(__r__, ref __vi__, 0X%X)) return false;", field.maxValue_);
+		f.output("%s.Add(__vi__);", field.getNameC());
 		f.recover("}");
 		f.recover("}");
 	}
@@ -304,9 +304,9 @@ static void generateServiceDispatcher(CodeFile& f, Service* s)
 	// dispatch function.
 	f.output("public static bool dispatch(bintalk.IReader __r__, %sProxy __p__)", s->getNameC());
 	f.indent("{");
-	f.output("ushort mid = 0;");
-	f.output("if(!bintalk.ProtocolReader.readMid(__r__, ref mid)) return false;");
-	f.output("switch(mid)");
+	f.output("ushort __mid__ = 0;");
+	f.output("if(!bintalk.ProtocolReader.readMid(__r__, ref __mid__)) return false;");
+	f.output("switch(__mid__)");
 	f.indent("{");
 	for(size_t m = 0; m < s->methods_.size(); m++)
 	{
