@@ -83,12 +83,10 @@ static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc, bool s
 
 static void generateStruct(CodeFile& f, Struct* s)
 {
-	f.output("class %s(%s):", s->getNameC(), s->super_?s->super_->getNameC():"object");
+	f.output("class %s(object):", s->getNameC());
 	f.indent();
 	f.output("def __init__(self):");
 	f.indent();
-	if(s->super_)
-		f.output("%s.__init__(self)", s->super_->getNameC());
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
@@ -97,14 +95,10 @@ static void generateStruct(CodeFile& f, Struct* s)
 	f.recover();
 	f.output("def serialize(self, __b__):");
 	f.indent();
-	if(s->super_)
-		f.output("%s.serialize(self, __b__)", s->super_->getNameC());
 	generateFieldContainerSCode(f, s, true);
 	f.recover();
 	f.output("def deserialize(self, __b__, __p__):");
 	f.indent();
-	if(s->super_)
-		f.output("__p__ = %s.deserialize(self, __b__, __p__)", s->super_->getNameC());
 	generateFieldContainerDSCode(f, s, true);
 	f.output("return __p__");
 	f.recover();
@@ -143,10 +137,7 @@ static void generateServiceStubMethod(CodeFile& f, Method& m)
 
 static void generateServiceStub(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("class %sStub(%sStub):", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("class %sStub(object):", s->getNameC());
+	f.output("class %sStub(object):", s->getNameC());
 	f.indent();
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateServiceStubMethod(f, s->methods_[i]);
@@ -170,8 +161,6 @@ static void generateServiceDispatcherMethod(CodeFile& f, Service* s, Method& m)
 static void generateServiceDispatcher(CodeFile& f, Service* s)
 {
 	f.output("%sDispatcher = []", s->getNameC());
-	if(s->super_)
-		f.output("%sDispatcher.extend(%sDispatcher)", s->getNameC(), s->super_->getNameC());
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateServiceDispatcherMethod(f, s, s->methods_[i]);
 	f.output("def dispatch%s(__b__, __p__, __proxy__):", s->getNameC());

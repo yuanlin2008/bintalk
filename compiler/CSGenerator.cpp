@@ -150,10 +150,7 @@ static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc)
 
 static void generateStruct(CodeFile& f, Struct* s)
 {
-	if(s->super_)
-		f.output("public class %s : %s", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("public class %s", s->getNameC());
+	f.output("public class %s", s->getNameC());
 	f.indent("{");
 	// fields.
 	for(size_t i = 0; i < s->fields_.size(); i++)
@@ -169,17 +166,13 @@ static void generateStruct(CodeFile& f, Struct* s)
 			dft.c_str());
 	}
 	// serialize code.
-	f.output("public %s void serialize(bintalk.IWriter __w__)", s->super_?"new":"");
+	f.output("public void serialize(bintalk.IWriter __w__)");
 	f.indent("{");
-	if(s->super_)
-		f.output("base.serialize(__w__);");
 	generateFieldContainerSCode(f, s);
 	f.recover("}");
 	// deserialize code.
-	f.output("public %s bool deserialize(bintalk.IReader __r__)", s->super_?"new":"");
+	f.output("public bool deserialize(bintalk.IReader __r__)");
 	f.indent("{");
-	if(s->super_)
-		f.output("base.deserialize(__r__);");
 	generateFieldContainerDSCode(f, s);
 	f.output("return true;");
 	f.recover("}");
@@ -225,16 +218,10 @@ static void generateStubMethod(CodeFile& f, Service* s, Method& m)
 
 static void generateServiceStub(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("public abstract class %sStub : %sStub", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("public abstract class %sStub", s->getNameC());
+	f.output("public abstract class %sStub", s->getNameC());
 	f.indent("{");
-	if(!s->super_)
-	{
-		f.output("protected abstract bintalk.IWriter methodBegin();");
-		f.output("protected abstract void methodEnd();");
-	}
+	f.output("protected abstract bintalk.IWriter methodBegin();");
+	f.output("protected abstract void methodEnd();");
 	// methods.
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateStubMethod(f, s, s->methods_[i]);
@@ -257,10 +244,7 @@ static void generateProxyAbstractMethod(CodeFile& f, Method& m)
 
 static void generateServiceProxy(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("public interface %sProxy : %sProxy", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("public interface %sProxy", s->getNameC());
+	f.output("public interface %sProxy", s->getNameC());
 	f.indent("{");
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateProxyAbstractMethod(f, s->methods_[i]);
@@ -319,10 +303,7 @@ static void generateServiceDispatcher(CodeFile& f, Service* s)
 	}
 	f.output("default:");
 	f.indent("{");
-	if(s->super_)
-		f.output("return %sDispatcher.dispatch(__r__, __p__);", s->super_->getNameC());
-	else
-		f.output("return false;");
+	f.output("return false;");
 	f.recover("}");
 	f.recover("}");
 	f.output("return true;");

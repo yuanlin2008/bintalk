@@ -127,10 +127,7 @@ static void generateProxyMethodDecl(CodeFile& f, Method& m)
 
 static void generateStructDecl(CodeFile& f, Struct* s)
 {
-	if(s->super_)
-		f.output("struct %s : public %s", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("struct %s", s->getNameC());
+	f.output("struct %s", s->getNameC());
 	f.indent("{");
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
@@ -145,29 +142,20 @@ static void generateStructDecl(CodeFile& f, Struct* s)
 
 static void generateStubDecl(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("class %sStub : public %sStub", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("class %sStub", s->getNameC());
+	f.output("class %sStub", s->getNameC());
 	f.indent("{");
 	f.output("public:");
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateStubMethodDecl(f, s->methods_[i]);
-	if(!s->super_)
-	{
-		f.output("protected:");
-		f.output("virtual bintalk::BinaryWriter* methodBegin() = 0;");
-		f.output("virtual void methodEnd() = 0;");
-	}
+	f.output("protected:");
+	f.output("virtual bintalk::BinaryWriter* methodBegin() = 0;");
+	f.output("virtual void methodEnd() = 0;");
 	f.recover("};");
 }
 
 static void generateProxyDecl(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("class %sProxy : public %sProxy", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("class %sProxy", s->getNameC());
+	f.output("class %sProxy", s->getNameC());
 	f.indent("{");
 	f.output("public:");
 	f.output("typedef class %sDispatcher Dispatcher;", s->getNameC());
@@ -178,10 +166,7 @@ static void generateProxyDecl(CodeFile& f, Service* s)
 
 static void generateDispatcherDecl(CodeFile& f, Service* s)
 {
-	if(s->super_)
-		f.output("class %sDispatcher : public %sDispatcher", s->getNameC(), s->super_->getNameC());
-	else
-		f.output("class %sDispatcher", s->getNameC());
+	f.output("class %sDispatcher", s->getNameC());
 	f.indent("{");
 	f.output("public:");
 	f.output("typedef class %sProxy Proxy;", s->getNameC());
@@ -230,14 +215,10 @@ static void generateStructImp(CodeFile& f, Struct* s)
 	f.recover("}");
 	f.output("void %s::serialize(bintalk::BinaryWriter* __w__) const", s->getNameC());
 	f.indent("{");
-	if(s->super_)
-		f.output("%s::serialize(__w__);", s->super_->getNameC());
 	generateFieldContainerSCode(f, s);
 	f.recover("}");
 	f.output("bool %s::deserialize(bintalk::BinaryReader* __r__)", s->getNameC());
 	f.indent("{");
-	if(s->super_)
-		f.output("if(!%s::deserialize(__r__)) return false;",s-> super_->getNameC());
 	generateFieldContainerDSCode(f, s);
 	f.output("return true;");
 	f.recover("}");
@@ -301,12 +282,10 @@ static void generateDispatcherImp(CodeFile& f, Service* s)
 	f.output("if(!bintalk::ProtocolReader::readMID(__r__, __mid__)) return false;");
 	f.output("switch(__mid__)");
 	f.indent("{");
-	std::vector<Method*> methods;
-	s->getAllMethods(methods);
-	for(size_t i = 0; i < methods.size(); i++)
+	for(size_t i = 0; i < s->methods_.size(); i++)
 	{
-		Method* method = methods[i];
-		f.output("case %d:{if(!%s(__r__, __p__)) return false;}break;", i, method->getNameC());
+		Method& method = s->methods_[i];
+		f.output("case %d:{if(!%s(__r__, __p__)) return false;}break;", i, method.getNameC());
 	}
 	f.output("default: return false;");
 	f.recover("}");

@@ -18,29 +18,15 @@ public:
 class Service : public Definition
 {
 public:
-	Service():
-	super_(NULL)
-	{}
-	virtual Service* getService()	
-	{ 
-		return this; 
-	}
+	Service() {}
+	virtual Service* getService()	{ return this; }
 	bool findMethod(const std::string& name)
 	{
 		for(size_t i = 0; i < methods_.size(); i++)
 			if(methods_[i].name_ == name)
 				return true;
-		return super_?super_->findMethod(name):false;
+		return false;
 	}
-	void getAllMethods(std::vector<Method*>& methods)
-	{
-		if(super_)
-			super_->getAllMethods(methods);
-		for(size_t i = 0; i < methods_.size(); i++)
-			methods.push_back(&(methods_[i]));
-	}
-
-	Service*			super_;
 	std::vector<Method>	methods_;
 };
 

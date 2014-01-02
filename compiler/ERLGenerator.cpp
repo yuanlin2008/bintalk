@@ -71,13 +71,11 @@ static const char* getFieldDefault(Field& f)
 static void generateStructHRL(CodeFile& f, Struct* s)
 {
 	f.output("%%%% struct %s", s->getNameC());
-	std::vector<Field*> fields;
-	s->getAllFields(fields);
 	f.listBegin(",", true, "-record(\'%s\', {", s->getNameC());
-	for(size_t i = 0; i < fields.size(); i++)
+	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
-		Field* field = fields[i];
-		f.listItem("\'%s\' = %s", field->getNameC(), getFieldDefault(*field));
+		Field& field = s->fields_[i];
+		f.listItem("\'%s\' = %s", field.getNameC(), getFieldDefault(field));
 	}
 	f.listEnd("}).");
 }
@@ -87,17 +85,15 @@ static void generateStructSerializeCode(CodeFile& f, Struct* s)
 	f.output("%% serialize");
 	f.output("serialize(S = #\'%s\'{}) ->", s->getNameC());
 	f.indent();
-	std::vector<Field*> fields;
-	s->getAllFields(fields);
 	f.listBegin(",", true, "[");
-	for(size_t i = 0; i < fields.size(); i++)
+	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
-		Field* field = fields[i];
+		Field& field = s->fields_[i];
 		f.listItem("bintalk_prot_writer:write(\'%s\', %s, S#\'%s\'.\'%s\')",
-			getFieldTypeName(*field),
-			field->isArray()?"true":"false",
+			getFieldTypeName(field),
+			field.isArray()?"true":"false",
 			s->getNameC(),
-			field->getNameC());
+			field.getNameC());
 	}
 	f.listEnd("].");
 	f.recover();
@@ -108,26 +104,24 @@ static void generateStructDeserializeCode(CodeFile& f, Struct* s)
 	f.output("%% deserialize");
 	f.output("deserialize(B0) when is_binary(B0) ->");
 	int bNum = 0;
-	std::vector<Field*> fields;
-	s->getAllFields(fields);
 	f.indent();
-	for(size_t i = 0; i < fields.size(); i++)
+	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
-		Field* field = fields[i];
+		Field& field = s->fields_[i];
 		f.output("{V_%s, B%d} = bintalk_prot_reader:read(\'%s\', 16#%X, 16#%X, B%d), ",
-			field->getNameC(),
+			field.getNameC(),
 			bNum + 1,
-			getFieldTypeName(*field),
-			field->maxArray_,
-			getFieldValMax(*field),
+			getFieldTypeName(field),
+			field.maxArray_,
+			getFieldValMax(field),
 			bNum);
 		bNum++;
 	}
 	f.listBegin(",", true, "{#\'%s\'{", s->getNameC());
-	for(size_t i = 0; i < fields.size(); i++)
+	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
-		Field* field = fields[i];
-		f.listItem("\'%s\' = V_%s", field->getNameC(), field->getNameC());
+		Field& field = s->fields_[i];
+		f.listItem("\'%s\' = V_%s", field.getNameC(), field.getNameC());
 	}
 	f.listEnd("}, B%d}.", bNum);
 	f.recover();
@@ -145,21 +139,21 @@ static void generateStructModule(Struct* s)
 	generateStructDeserializeCode(f, s);
 }
 
-static void generateServiceStubMethod(CodeFile& f, Method* m)
+static void generateServiceStubMethod(CodeFile& f, Method& m)
 {
-	f.listBegin(",", false, "\'%s\'(", m->getNameC());
-	for(size_t i = 0; i < m->fields_.size(); i++)
+	f.listBegin(",", false, "\'%s\'(", m.getNameC());
+	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
-		Field& field = m->fields_[i];
+		Field& field = m.fields_[i];
 		f.listItem("V_%s", field.getNameC());
 	}
 	f.listEnd(") ->");
 	f.indent();
 	f.listBegin(",", true, "[");
-	f.listItem("bintalk_prot_writer:write_mid(%d)", m->mid_);
-	for(size_t i = 0; i < m->fields_.size(); i++)
+	f.listItem("bintalk_prot_writer:write_mid(%d)", m.mid_);
+	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
-		Field& field = m->fields_[i];
+		Field& field = m.fields_[i];
 		f.listItem("bintalk_prot_writer:write(\'%s\', %s, V_%s)",
 			getFieldTypeName(field),
 			field.isArray()?"true":"false",
@@ -171,32 +165,29 @@ static void generateServiceStubMethod(CodeFile& f, Method* m)
 
 static void generateServiceStubModule(Service* s)
 {
-	std::vector<Method*> methods;
-	s->getAllMethods(methods);
-
 	CodeFile f(gOptions.output_ + s->name_ + "_stub.erl");
 	f.output("-module(\'%s_stub\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.listBegin(",", true, "-export([");
-	for(size_t i = 0; i < methods.size(); i++)
+	for(size_t i = 0; i < s->methods_.size(); i++)
 	{
-		Method* method = methods[i];
-		f.listItem("\'%s\'/%d", method->getNameC(), method->fields_.size());
+		Method& method = s->methods_[i];
+		f.listItem("\'%s\'/%d", method.getNameC(), method.fields_.size());
 	}
 	f.listEnd("]).");
 
-	for(size_t i = 0; i < methods.size(); i++)
-		generateServiceStubMethod(f, methods[i]);
+	for(size_t i = 0; i < s->methods_.size(); i++)
+		generateServiceStubMethod(f, s->methods_[i]);
 }
 
-static void generateServiceProxyMethod(CodeFile& f, Method* m, bool isLast)
+static void generateServiceProxyMethod(CodeFile& f, Method& m, bool isLast)
 {
-	f.output("dispatch(%d, B0, M, S) ->", m->mid_);
+	f.output("dispatch(%d, B0, M, S) ->", m.mid_);
 	f.indent();
 	int bNum = 0;
-	for(size_t i = 0; i < m->fields_.size(); i++)
+	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
-		Field& field = m->fields_[i];
+		Field& field = m.fields_[i];
 		f.output("{V_%s, B%d} = bintalk_prot_reader:read(\'%s\', 16#%X, 16#%X, B%d),",
 			field.getNameC(),
 			bNum + 1,
@@ -206,10 +197,10 @@ static void generateServiceProxyMethod(CodeFile& f, Method* m, bool isLast)
 			bNum);
 		bNum++;
 	}
-	f.listBegin(",", false, "S1 = M:\'%s\'(", m->getNameC());
-	for(size_t i = 0; i < m->fields_.size(); i++)
+	f.listBegin(",", false, "S1 = M:\'%s\'(", m.getNameC());
+	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
-		Field& field = m->fields_[i];
+		Field& field = m.fields_[i];
 		f.listItem("V_%s", field.getNameC());
 	}
 	f.listItem("S");
@@ -220,9 +211,6 @@ static void generateServiceProxyMethod(CodeFile& f, Method* m, bool isLast)
 
 static void generateServiceProxyModule(Service* s)
 {
-	std::vector<Method*> methods;
-	s->getAllMethods(methods);
-
 	CodeFile f(gOptions.output_ + s->name_ + "_proxy.erl");
 	f.output("-module(\'%s_proxy\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
@@ -232,18 +220,18 @@ static void generateServiceProxyModule(Service* s)
 	f.output("behaviour_info(callbacks) ->");
 	f.indent();
 	f.listBegin(",", true, "[");
-	for(size_t i = 0; i < methods.size(); i++)
+	for(size_t i = 0; i < s->methods_.size(); i++)
 	{
-		Method* method = methods[i];
+		Method& method = s->methods_[i];
 		f.listItem("{%s, %d}", 
-			method->getNameC(), 
-			method->fields_.size() + 1);
+			method.getNameC(), 
+			method.fields_.size() + 1);
 	}
 	f.listEnd("];");
 	f.recover();
 	f.output("behaviour_info(_) -> undefined.");
 
-	if(methods.size())
+	if(s->methods_.size())
 	{
 		f.output("%%%% dispatch.");
 		f.output("dispatch(B, M, S) when is_binary(B) ->");
@@ -251,8 +239,8 @@ static void generateServiceProxyModule(Service* s)
 		f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
 		f.output("dispatch(MID, BR, M, S).");
 		f.recover();
-		for(size_t i = 0; i < methods.size(); i++)
-			generateServiceProxyMethod(f, methods[i], i == methods.size()-1);
+		for(size_t i = 0; i < s->methods_.size(); i++)
+			generateServiceProxyMethod(f, s->methods_[i], i == s->methods_.size()-1);
 	}
 	else
 	{

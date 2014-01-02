@@ -134,33 +134,11 @@ structure:
 		gContext.curStruct_.name_ = $2;
 		gContext.curStruct_.file_ = gContext.curFilename_;
 	}
-	opt_super_structure
 	'{' struct_fields '}'
 	{
 		// Add this struct definition.
 		Struct* s = new Struct(gContext.curStruct_);
 		gContext.definitions_.push_back(s);
-	}
-	;
-
-/*opt_super_structure*/
-opt_super_structure:
-	super_structure
-	|
-	/*empty*/
-	;
-
-/*super_structure*/
-super_structure:
-	':' TOKEN_IDENTIFIER
-	{
-		Definition* d = gContext.findDefinition($2);
-		if(!d || !d->getStruct() || gContext.curStruct_.name_ == $2)
-		{
-			gContext.error("invalid super struct \"%s\"", $2.c_str());
-			YYERROR;
-		}
-		gContext.curStruct_.super_ = d->getStruct();
 	}
 	;
 
@@ -211,33 +189,11 @@ service:
 		gContext.curService_.file_ = gContext.curFilename_;
 		gContext.curMethod_ = Method();
 	}
-	opt_super_service
 	'{' service_methods '}'
 	{
 		// Add this service.
 		Service* s = new Service(gContext.curService_);
 		gContext.definitions_.push_back(s);
-	}
-	;
-
-/*opt_super_service*/
-opt_super_service:
-	super_service
-	|
-	/*empty*/
-	;
-
-/*super_service*/
-super_service:
-	':' TOKEN_IDENTIFIER
-	{
-		Definition* d = gContext.findDefinition($2);
-		if(!d || !d->getService() || gContext.curService_.name_ == $2)
-		{
-			gContext.error("invalid super service \"%s\"", $2.c_str());
-			YYERROR;
-		}
-		gContext.curService_.super_ = d->getService();
 	}
 	;
 
@@ -259,12 +215,6 @@ service_method:
 		}
 		gContext.curMethod_.name_ = $1;
 		gContext.curMethod_.mid_ = gContext.curService_.methods_.size();
-		Service* svc = gContext.curService_.super_;
-		while(svc)
-		{
-			gContext.curMethod_.mid_ += svc->methods_.size();
-			svc = svc->super_;
-		}
 		gContext.curService_.methods_.push_back(gContext.curMethod_);
 		gContext.curMethod_ = Method();
 	}
