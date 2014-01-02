@@ -159,6 +159,16 @@ static void generateProxyDecl(CodeFile& f, Service* s)
 	f.indent("{");
 	f.output("public:");
 	f.output("typedef class %sDispatcher Dispatcher;", s->getNameC());
+	// Generate methed id.
+	f.output("enum MID");
+	f.indent("{");
+	for(size_t i = 0; i < s->methods_.size(); i++)
+	{
+		Method& method = s->methods_[i];
+		f.output("MID_%s = %d,", method.name_.c_str(), method.mid_);
+	}
+	f.recover("};");
+	f.output("virtual bool filterMethod(%sProxy::MID mid) { return true; }", s->getNameC());
 	for(size_t i = 0; i < s->methods_.size(); i++)	
 		generateProxyMethodDecl(f, s->methods_[i]);
 	f.recover("};");
@@ -280,6 +290,7 @@ static void generateDispatcherImp(CodeFile& f, Service* s)
 	f.indent("{");
 	f.output("bintalk::MID __mid__;");
 	f.output("if(!bintalk::ProtocolReader::readMID(__r__, __mid__)) return false;");
+	f.output("if(__p__->filterMethod((%sProxy::MID)__mid__)) return false;", s->getNameC());
 	f.output("switch(__mid__)");
 	f.indent("{");
 	for(size_t i = 0; i < s->methods_.size(); i++)

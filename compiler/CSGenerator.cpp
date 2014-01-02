@@ -244,8 +244,15 @@ static void generateProxyAbstractMethod(CodeFile& f, Method& m)
 
 static void generateServiceProxy(CodeFile& f, Service* s)
 {
+	f.output("public enum %sProxyMID", s->getNameC());
+	f.indent("{");
+	for(size_t i = 0; i < s->methods_.size(); i++)
+		f.output("%s,", s->methods_[i].name_.c_str());
+	f.recover("}");
+
 	f.output("public interface %sProxy", s->getNameC());
 	f.indent("{");
+	f.output("bool filterMethod(%sProxyMID mid);", s->getNameC());
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateProxyAbstractMethod(f, s->methods_[i]);
 	f.recover("}");
@@ -290,6 +297,7 @@ static void generateServiceDispatcher(CodeFile& f, Service* s)
 	f.indent("{");
 	f.output("ushort __mid__ = 0;");
 	f.output("if(!bintalk.ProtocolReader.readMid(__r__, ref __mid__)) return false;");
+	f.output("if(__p__.filterMethod((%sProxyMID)__mid__)) return false;", s->getNameC());
 	f.output("switch(__mid__)");
 	f.indent("{");
 	for(size_t m = 0; m < s->methods_.size(); m++)

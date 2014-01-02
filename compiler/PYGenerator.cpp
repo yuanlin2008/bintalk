@@ -160,12 +160,22 @@ static void generateServiceDispatcherMethod(CodeFile& f, Service* s, Method& m)
 
 static void generateServiceDispatcher(CodeFile& f, Service* s)
 {
+	f.output("class %sMID(object):", s->getNameC());
+	f.indent();
+	for(size_t i = 0; i < s->methods_.size(); i++)
+		f.output("%s = %d", s->methods_[i].name_.c_str(), s->methods_[i].mid_);
+	f.recover();
+
 	f.output("%sDispatcher = []", s->getNameC());
 	for(size_t i = 0; i < s->methods_.size(); i++)
 		generateServiceDispatcherMethod(f, s, s->methods_[i]);
 	f.output("def dispatch%s(__b__, __p__, __proxy__):", s->getNameC());
 	f.indent();
 	f.output("__id__, __p__ = protocol_reader.read_mid(__b__, __p__)");
+	f.output("if __proxy__.filterMID(__id__) == True:");
+	f.indent();
+	f.output("return __p__");
+	f.recover();
 	f.output("return %sDispatcher[__id__](__b__, __p__, __proxy__)", s->getNameC());
 	f.recover();
 }

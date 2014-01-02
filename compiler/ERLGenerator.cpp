@@ -180,7 +180,7 @@ static void generateServiceStubModule(Service* s)
 		generateServiceStubMethod(f, s->methods_[i]);
 }
 
-static void generateServiceProxyMethod(CodeFile& f, Method& m, bool isLast)
+static void generateServiceDispatcherMethod(CodeFile& f, Method& m, bool isLast)
 {
 	f.output("dispatch(%d, B0, M, S) ->", m.mid_);
 	f.indent();
@@ -209,10 +209,17 @@ static void generateServiceProxyMethod(CodeFile& f, Method& m, bool isLast)
 	f.recover();
 }
 
-static void generateServiceProxyModule(Service* s)
+static void generateServiceDispatcherModule(CodeFile& hrlFile, Service* s)
 {
-	CodeFile f(gOptions.output_ + s->name_ + "_proxy.erl");
-	f.output("-module(\'%s_proxy\').", s->getNameC());
+	hrlFile.output("%%%% %s mid", s->getNameC());
+	for(size_t i = 0; i < s->methods_.size(); i++)
+		hrlFile.output("-define(%s_%s, %d).", 
+		s->getNameC(), 
+		s->methods_[i].name_.c_str(), 
+		s->methods_[i].mid_);
+
+	CodeFile f(gOptions.output_ + s->name_ + "_dispatcher.erl");
+	f.output("-module(\'%s_dispatcher\').", s->getNameC());
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.output("-export([behaviour_info/1, dispatch/3]).");
 
@@ -220,6 +227,7 @@ static void generateServiceProxyModule(Service* s)
 	f.output("behaviour_info(callbacks) ->");
 	f.indent();
 	f.listBegin(",", true, "[");
+	f.listItem("{filter_method, 2}");
 	for(size_t i = 0; i < s->methods_.size(); i++)
 	{
 		Method& method = s->methods_[i];
@@ -237,10 +245,16 @@ static void generateServiceProxyModule(Service* s)
 		f.output("dispatch(B, M, S) when is_binary(B) ->");
 		f.indent();
 		f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
-		f.output("dispatch(MID, BR, M, S).");
+		f.output("{F, S1} = M:filter_method(MID, S),");
+		f.output("case F of");
+		f.indent();
+		f.output("true -> {BR, S1};");
+		f.output("false -> dispatch(MID, BR, M, S1)");
+		f.recover();
+		f.output("end.");
 		f.recover();
 		for(size_t i = 0; i < s->methods_.size(); i++)
-			generateServiceProxyMethod(f, s->methods_[i], i == s->methods_.size()-1);
+			generateServiceDispatcherMethod(f, s->methods_[i], i == s->methods_.size()-1);
 	}
 	else
 	{
@@ -279,7 +293,7 @@ void ERLGenerator::generate()
 		else if (definition->getService())
 		{
 			generateServiceStubModule(definition->getService());
-			generateServiceProxyModule(definition->getService());
+			generateServiceDispatcherModule(hrlFile, definition->getService());
 		}
 	}
 
