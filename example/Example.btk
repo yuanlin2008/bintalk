@@ -2,13 +2,13 @@
 #import Import.btk
 
 /* Structure inheritance. */
-struct DerivedStruct : StructBase
+struct DerivedStruct
 {
 	int32 aaa_;
 }
 
 /* Service inheritance. */
-service DerivedService : ServiceBase
+service DerivedService
 {
 	method3(DerivedStruct d);
 	method4();
