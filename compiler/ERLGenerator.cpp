@@ -12,6 +12,25 @@ static void generateEnumHRL(CodeFile& f, Enum* e)
 		f.output("-define(%s_%s, %d).", e->getNameC(), e->items_[i].c_str(), i);
 }
 
+static const char* getAtom(const char* name)
+{
+	static std::string s[8];
+	static int id = 0;
+	std::string& str = s[id];
+	if (isupper(name[0]))
+	{
+		str = "\'";
+		str += name;
+		str += "\'";
+	}
+	else
+		str = name;
+	id++;
+	if (id >= 8)
+		id = 0;
+	return str.c_str();
+}
+
 static const char* getFieldTypeName(Field& f)
 {
 	switch(f.type_)
@@ -28,18 +47,26 @@ static const char* getFieldTypeName(Field& f)
 	case Field::FT_UINT8:	return "uint8";
 	case Field::FT_BOOL:	return "bool";
 	case Field::FT_STRING:	return "string";
-	case Field::FT_USER:	return f.userType_->getNameC();
+	case Field::FT_USER:	return "struct";
 	case Field::FT_BINARY:	return "binary";
 	case Field::FT_ENUM:	return "enum";
 	}
 	return "";
 }
 
-static size_t getFieldValMax(Field& f)
+static const char* getFieldVal(Field& f)
 {
-	if(f.type_ == Field::FT_STRING || f.type_ == Field::FT_BINARY || f.type_ == Field::FT_ENUM)
-		return f.maxValue_;
-	return 0;
+	static std::string s;
+	s = "0";
+	if (f.type_ == Field::FT_STRING || f.type_ == Field::FT_BINARY || f.type_ == Field::FT_ENUM)
+	{
+		char temp[64];
+		sprintf(temp, "16#%X", f.maxValue_);
+		s = temp;
+	}
+	else if (f.type_ == Field::FT_USER)
+		s = f.userType_->getNameC();
+	return s.c_str();
 }
 
 static const char* getFieldDefault(Field& f)
@@ -63,19 +90,61 @@ static const char* getFieldDefault(Field& f)
 	case Field::FT_BOOL:	return "false";
 	case Field::FT_STRING:	return "\"\"";
 	case Field::FT_BINARY:	return "<<>>";
-	case Field::FT_USER:	def = "#\'" + f.userType_->name_ + "\'{}"; break;
+	case Field::FT_USER:	
+		def = "#"; 
+		def += getAtom(f.userType_->name_.c_str()); 
+		def += "{}"; break;
 	}
 	return def.c_str();
+}
+
+static const char* getFieldErlType(Field& f)
+{
+	static std::string s;
+	s = "";
+	if (f.isArray())
+		s = "[";
+	switch(f.type_)
+	{
+	case Field::FT_DOUBLE:
+	case Field::FT_FLOAT:
+		s += "integer()|float()"; break;
+	case Field::FT_UINT64:
+	case Field::FT_UINT32:
+	case Field::FT_UINT16:
+	case Field::FT_UINT8:	
+	case Field::FT_ENUM:
+		s += "non_neg_integer()"; break;
+	case Field::FT_INT64:
+	case Field::FT_INT32:
+	case Field::FT_INT16:
+	case Field::FT_INT8:
+		s += "integer()"; break;
+	case Field::FT_BOOL:
+		s += "boolean()"; break;
+	case Field::FT_STRING:
+		s += "string()"; break;
+	case Field::FT_BINARY:
+		s += "binary()"; break;
+	case Field::FT_USER:
+		s += "#";
+		s += getAtom(f.userType_->name_.c_str());
+		s += "{}";
+		break;
+	}
+	if (f.isArray())
+		s += "]";
+	return s.c_str();
 }
 
 static void generateStructHRL(CodeFile& f, Struct* s)
 {
 	f.output("%%%% struct %s", s->getNameC());
-	f.listBegin(",", true, "-record(\'%s\', {", s->getNameC());
+	f.listBegin(",", true, "-record(%s, {", getAtom(s->getNameC()));
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
-		f.listItem("\'%s\' = %s", field.getNameC(), getFieldDefault(field));
+		f.listItem("%s = %s::%s", getAtom(field.getNameC()), getFieldDefault(field), getFieldErlType(field));
 	}
 	f.listEnd("}).");
 }
@@ -83,17 +152,23 @@ static void generateStructHRL(CodeFile& f, Struct* s)
 static void generateStructSerializeCode(CodeFile& f, Struct* s)
 {
 	f.output("%% serialize");
-	f.output("serialize(S = #\'%s\'{}) ->", s->getNameC());
+	f.output("-spec serialize(#%s{})->iolist().", getAtom(s->getNameC()));
+	f.output("serialize(S) ->");
 	f.indent();
 	f.listBegin(",", true, "[");
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
-		f.listItem("bintalk_prot_writer:write(\'%s\', %s, S#\'%s\'.\'%s\')",
+		if (field.isArray())
+			f.listItem("bintalk_prot_writer:write_array(write_%s, S#%s.%s)", 
 			getFieldTypeName(field),
-			field.isArray()?"true":"false",
-			s->getNameC(),
-			field.getNameC());
+			getAtom(s->getNameC()),
+			getAtom(field.getNameC()));
+		else 
+			f.listItem("bintalk_prot_writer:write_%s(S#%s.%s)",
+			getFieldTypeName(field),
+			getAtom(s->getNameC()),
+			getAtom(field.getNameC()));
 	}
 	f.listEnd("].");
 	f.recover();
@@ -102,26 +177,35 @@ static void generateStructSerializeCode(CodeFile& f, Struct* s)
 static void generateStructDeserializeCode(CodeFile& f, Struct* s)
 {
 	f.output("%% deserialize");
-	f.output("deserialize(B0) when is_binary(B0) ->");
+	f.output("-spec deserialize(binary())->{#%s{}, binary()}.", getAtom(s->getNameC()));
+	f.output("deserialize(B0)->");
 	int bNum = 0;
 	f.indent();
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
-		f.output("{V_%s, B%d} = bintalk_prot_reader:read(\'%s\', 16#%X, 16#%X, B%d), ",
-			field.getNameC(),
-			bNum + 1,
-			getFieldTypeName(field),
-			field.maxArray_,
-			getFieldValMax(field),
-			bNum);
+		if (field.isArray())
+			f.output("{V_%s, B%d} = bintalk_prot_reader:read_array(read_%s, 16#%X, %s, B%d), ",
+				field.getNameC(),
+				bNum + 1,
+				getFieldTypeName(field),
+				field.maxArray_,
+				getFieldVal(field),
+				bNum);
+		else
+			f.output("{V_%s, B%d} = bintalk_prot_reader:read_%s(%s, B%d), ",
+				field.getNameC(),
+				bNum + 1,
+				getFieldTypeName(field),
+				getFieldVal(field),
+				bNum);
 		bNum++;
 	}
-	f.listBegin(",", true, "{#\'%s\'{", s->getNameC());
+	f.listBegin(",", true, "{#%s{", getAtom(s->getNameC()));
 	for(size_t i = 0; i < s->fields_.size(); i++)
 	{
 		Field& field = s->fields_[i];
-		f.listItem("\'%s\' = V_%s", field.getNameC(), field.getNameC());
+		f.listItem("%s = V_%s", getAtom(field.getNameC()), field.getNameC());
 	}
 	f.listEnd("}, B%d}.", bNum);
 	f.recover();
@@ -130,7 +214,7 @@ static void generateStructDeserializeCode(CodeFile& f, Struct* s)
 static void generateStructModule(Struct* s)
 {
 	CodeFile f(gOptions.output_ + s->name_ + ".erl");
-	f.output("-module(\'%s\').", s->getNameC());
+	f.output("-module(%s).", getAtom(s->getNameC()));
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.output("-export([serialize/1, deserialize/1]).");
 	// serialize.
@@ -141,7 +225,14 @@ static void generateStructModule(Struct* s)
 
 static void generateServiceStubMethod(CodeFile& f, Method& m)
 {
-	f.listBegin(",", false, "\'%s\'(", m.getNameC());
+	f.listBegin(",", false, "-spec %s(", getAtom(m.getNameC()));
+	for(size_t i = 0; i < m.fields_.size(); i++)
+	{
+		Field& field = m.fields_[i];
+		f.listItem("%s", getFieldErlType(field));
+	}
+	f.listEnd(")->iolist().");
+	f.listBegin(",", false, "%s(", getAtom(m.getNameC()));
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
@@ -154,10 +245,14 @@ static void generateServiceStubMethod(CodeFile& f, Method& m)
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
-		f.listItem("bintalk_prot_writer:write(\'%s\', %s, V_%s)",
+		if (field.isArray())
+			f.listItem("bintalk_prot_writer:write_array(write_%s, V_%s)", 
 			getFieldTypeName(field),
-			field.isArray()?"true":"false",
-			field.getNameC());
+			getAtom(field.getNameC()));
+		else 
+			f.listItem("bintalk_prot_writer:write_%s(V_%s)",
+			getFieldTypeName(field),
+			getAtom(field.getNameC()));
 	}
 	f.listEnd("].");
 	f.recover();
@@ -166,13 +261,13 @@ static void generateServiceStubMethod(CodeFile& f, Method& m)
 static void generateServiceStubModule(Service* s)
 {
 	CodeFile f(gOptions.output_ + s->name_ + "_stub.erl");
-	f.output("-module(\'%s_stub\').", s->getNameC());
+	f.output("-module(%s_stub).", getAtom(s->getNameC()));
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.listBegin(",", true, "-export([");
 	for(size_t i = 0; i < s->methods_.size(); i++)
 	{
 		Method& method = s->methods_[i];
-		f.listItem("\'%s\'/%d", method.getNameC(), method.fields_.size());
+		f.listItem("%s/%d", getAtom(method.getNameC()), method.fields_.size());
 	}
 	f.listEnd("]).");
 
@@ -188,16 +283,24 @@ static void generateServiceDispatcherMethod(CodeFile& f, Method& m, bool isLast)
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
-		f.output("{V_%s, B%d} = bintalk_prot_reader:read(\'%s\', 16#%X, 16#%X, B%d),",
-			field.getNameC(),
-			bNum + 1,
-			getFieldTypeName(field),
-			field.maxArray_,
-			getFieldValMax(field),
-			bNum);
+		if (field.isArray())
+			f.output("{V_%s, B%d} = bintalk_prot_reader:read_array(read_%s, 16#%X, %s, B%d), ",
+				field.getNameC(),
+				bNum + 1,
+				getFieldTypeName(field),
+				field.maxArray_,
+				getFieldVal(field),
+				bNum);
+		else
+			f.output("{V_%s, B%d} = bintalk_prot_reader:read_%s(%s, B%d), ",
+				field.getNameC(),
+				bNum + 1,
+				getFieldTypeName(field),
+				getFieldVal(field),
+				bNum);
 		bNum++;
 	}
-	f.listBegin(",", false, "S1 = M:\'%s\'(", m.getNameC());
+	f.listBegin(",", false, "S1 = M:%s(", getAtom(m.getNameC()));
 	for(size_t i = 0; i < m.fields_.size(); i++)
 	{
 		Field& field = m.fields_[i];
@@ -219,7 +322,7 @@ static void generateServiceDispatcherModule(CodeFile& hrlFile, Service* s)
 		s->methods_[i].mid_);
 
 	CodeFile f(gOptions.output_ + s->name_ + "_dispatcher.erl");
-	f.output("-module(\'%s_dispatcher\').", s->getNameC());
+	f.output("-module(%s_dispatcher).", getAtom(s->getNameC()));
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
 	f.output("-export([behaviour_info/1, dispatch/3]).");
 
@@ -242,7 +345,7 @@ static void generateServiceDispatcherModule(CodeFile& hrlFile, Service* s)
 	if(s->methods_.size())
 	{
 		f.output("%%%% dispatch.");
-		f.output("dispatch(B, M, S) when is_binary(B) ->");
+		f.output("dispatch(B, M, S)->");
 		f.indent();
 		f.output("{MID, BR} = bintalk_prot_reader:read_mid(B),");
 		f.output("{F, S1} = M:filter_method(MID, S),");
@@ -260,7 +363,7 @@ static void generateServiceDispatcherModule(CodeFile& hrlFile, Service* s)
 	{
 		// no method yet.
 		f.output("%%%% dispatch.");
-		f.output("dispatch(B, _M, S) when is_binary(B) ->");
+		f.output("dispatch(B, _M, S)->");
 		f.indent();
 		f.output("{B, S}.");
 		f.recover();
