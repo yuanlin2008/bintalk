@@ -26,7 +26,7 @@ write_mid(Mid)-> <<Mid:16/little-unsigned-integer>>.
 -spec write_array(atom(), [any()])-> iolist().
 write_array(FunName, L)->
 	BLen = write_dyn_size(length(L)),
-	BArr = [FunName(I) || I <- L],
+	BArr = [?MODULE:(FunName)(I) || I <- L],
 	[BLen|BArr].
 
 -spec write_int64(integer())-> binary().
@@ -74,7 +74,9 @@ write_binary(V) -> [write_dyn_size(byte_size(V)),V].
 write_enum(V) -> write_uint8(V).
 
 -spec write_struct(tuple())->iolist().
-write_struct(V) -> A = element(1, V), A:serialize(V).
+write_struct(V) -> 
+	M = element(1, V), 
+	M:serialize(V).
 
 %%----------------------------------------------------------------------
 %% Local Functions
