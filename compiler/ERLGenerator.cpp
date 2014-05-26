@@ -275,6 +275,17 @@ static void generateServiceStubModule(Service* s)
 		generateServiceStubMethod(f, s->methods_[i]);
 }
 
+static void generateServiceCallback(CodeFile& f, Method& m)
+{
+	f.listBegin(",", false, "-callback %s(", getAtom(m.getNameC()));
+	for (size_t i = 0; i < m.fields_.size(); i++)
+	{
+		Field& field = m.fields_[i];
+		f.listItem("%s", getFieldErlType(field));
+	}
+	f.listEnd(")->term().");
+}
+
 static void generateServiceDispatcherMethod(CodeFile& f, Method& m, bool isLast)
 {
 	f.output("dispatch(%d, B0, M, S) ->", m.mid_);
@@ -324,23 +335,22 @@ static void generateServiceDispatcherModule(CodeFile& hrlFile, Service* s)
 	CodeFile f(gOptions.output_ + s->name_ + "_dispatcher.erl");
 	f.output("-module(%s_dispatcher).", getAtom(s->getNameC()));
 	f.output("-include(\"%s.hrl\").", gOptions.inputFS_.c_str());
-	f.output("-export([behaviour_info/1, dispatch/3]).");
+	f.output("-export([dispatch/3]).");
 
 	f.output("%%%% callbacks.");
-	f.output("behaviour_info(callbacks) ->");
-	f.indent();
-	f.listBegin(",", true, "[");
-	f.listItem("{filter_method, 2}");
+	f.output("-callback filter_method(non_neg_integer(), term())->{boolean(), term()}.");
 	for(size_t i = 0; i < s->methods_.size(); i++)
-	{
-		Method& method = s->methods_[i];
-		f.listItem("{%s, %d}", 
-			method.getNameC(), 
-			method.fields_.size() + 1);
+	{ 
+		Method& m = s->methods_[i];
+		f.listBegin(",", false, "-callback %s(", getAtom(m.getNameC()));
+		for (size_t fi = 0; fi < m.fields_.size(); fi++)
+		{
+			Field& field = m.fields_[fi];
+			f.listItem("%s", getFieldErlType(field));
+		}
+		f.listItem("term()");
+		f.listEnd(")->term().");
 	}
-	f.listEnd("];");
-	f.recover();
-	f.output("behaviour_info(_) -> undefined.");
 
 	if(s->methods_.size())
 	{
