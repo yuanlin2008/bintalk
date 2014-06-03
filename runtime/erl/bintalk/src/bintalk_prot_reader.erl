@@ -92,7 +92,7 @@ read_struct(T, B) -> T:deserialize(B).
 read_array_item(_, 0, _, L, B) ->
 	{lists:reverse(L), B};
 read_array_item(T, N, Val, L, B) ->
-	{V, R} = T(Val, B),
+	{V, R} = ?MODULE:(T)(Val, B),
 	read_array_item(T, N-1, Val, [V|L], R).
 
 read_dyn_size(<<0:2, S:6, R/binary>>) -> {S, R};
