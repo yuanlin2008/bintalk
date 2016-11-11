@@ -88,7 +88,7 @@ static const char* getFieldDefault(Field& f)
 	case Field::FT_ENUM:
 	case Field::FT_UINT8:	return "0";
 	case Field::FT_BOOL:	return "false";
-	case Field::FT_STRING:	return "\"\"";
+	case Field::FT_STRING:	return "<<>>";
 	case Field::FT_BINARY:	return "<<>>";
 	case Field::FT_USER:	
 		def = "#"; 
@@ -123,7 +123,7 @@ static const char* getFieldErlType(Field& f)
 	case Field::FT_BOOL:
 		s += "boolean()"; break;
 	case Field::FT_STRING:
-		s += "string()"; break;
+		s += "binary()"; break;
 	case Field::FT_BINARY:
 		s += "binary()"; break;
 	case Field::FT_USER:
