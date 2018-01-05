@@ -33,6 +33,7 @@ set(GEN_FILES
 	PYGenerator.cpp
 	ERLGenerator.cpp
 	CSGenerator.cpp
+	LUAGenerator.cpp
 	)
 set(MISC_FILES
 	bintalk.cpp
