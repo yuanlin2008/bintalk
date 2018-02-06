@@ -70,7 +70,7 @@ read_string(ValMax, B) ->
 	{Len, R} = read_dyn_size(B),
 	true = Len =< ValMax,
 	<<Str:Len/binary, R1/binary>> = R,
-	{binary_to_list(Str), R1}.
+	{Str, R1}.
 
 -spec read_binary(non_neg_integer(), binary())->{binary(), binary()}.
 read_binary(ValMax, B) ->
