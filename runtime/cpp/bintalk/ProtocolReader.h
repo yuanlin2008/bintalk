@@ -51,7 +51,7 @@ public:
 	static bool readENUM16(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)
 	{ 
 		UINT16 e;
-		if(!readUINT16(r, e, maxArray_, maxValue_))
+		if(!readUINT16(r, e, maxArray, maxValue))
 			return false;
 		if((UINT32)e > maxValue)
 			return false;
