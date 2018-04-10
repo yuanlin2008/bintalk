@@ -91,6 +91,11 @@ local function type_enum(b, p, valMax)
 	return type_uint8(b, p, 0)
 end
 
+-- Read enum16
+local function type_enum16(b, p, valMax)
+	return type_uint16(b, p, 0)
+end
+
 -- Read binary
 local function type_binary(b, p, valMax)
 	return type_string(b, p, valMax)
@@ -133,6 +138,7 @@ BTK_Reader =
 	type_bool	= type_bool,
 	type_string	= type_string,
 	type_enum	= type_enum,
+	type_enum16	= type_enum16,
 	type_binary	= type_binary,
 	type_mid	= type_mid,
 	type_array	= type_array,

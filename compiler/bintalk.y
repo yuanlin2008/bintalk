@@ -80,7 +80,7 @@ enumeration:
 	}
 	'{' enum_items '}'
 	{
-		if(gContext.curEnum_.items_.size() > 256)
+		if(gContext.curEnum_.items_.size() > 65536)
 		{
 			gContext.error("enum \"%s\" has too many items.", gContext.curEnum_.getNameC());
 			YYERROR;

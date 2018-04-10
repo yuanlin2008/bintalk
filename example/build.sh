@@ -1,4 +1,5 @@
-BINTALK_CMD=../../install/bin/bintalk
+﻿#
+BINTALK_CMD=../build/compiler/Release/bintalk
 rm -rf gen
 mkdir gen
 cd gen
@@ -6,6 +7,7 @@ mkdir cpp
 mkdir cs
 mkdir erl
 mkdir py
+mkdir lua
 cd ..
 
 # cpp
@@ -27,3 +29,8 @@ $BINTALK_CMD -g erl -o gen/erl/ Example.btk
 echo "py"
 $BINTALK_CMD -g py -o gen/py/ Import.btk
 $BINTALK_CMD -g py -o gen/py/ Example.btk
+
+#lua 
+echo "lua"
+$BINTALK_CMD -g lua -o gen/lua/ Import.btk
+$BINTALK_CMD -g lua -o gen/lua/ Example.btk

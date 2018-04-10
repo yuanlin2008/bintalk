@@ -97,6 +97,10 @@ local function type_enum(v, b)
 	type_uint8(v, b)
 end
 
+-- Write enum16
+local function type_enum16(v, b)
+	type_uint16(v, b)
+end
 -- Write binary
 local function type_binary(v, b)
 	assert(type(v) == "string")
@@ -133,6 +137,7 @@ BTK_Writer =
 	type_bool	= type_bool,
 	type_string	= type_string,
 	type_enum	= type_enum,
+	type_enum16	= type_enum16,
 	type_binary	= type_binary,
 	type_mid	= type_mid,
 	type_array	= type_array,

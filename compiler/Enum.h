@@ -17,6 +17,10 @@ public:
 	{
 		return (std::find(items_.begin(), items_.end(), item) == items_.end())?false:true;
 	}
+	bool isEnum16()
+	{
+		return items_.size() > 256;
+	}
 
 	/** Item names. */
 	std::vector<std::string>	items_;

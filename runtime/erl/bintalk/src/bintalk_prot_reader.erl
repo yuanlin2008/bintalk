@@ -18,6 +18,7 @@
 -export([read_string/2]).
 -export([read_binary/2]).
 -export([read_enum/2]).
+-export([read_enum16/2]).
 -export([read_struct/2]).
 
 %% @doc Read a message id.
@@ -81,6 +82,9 @@ read_binary(ValMax, B) ->
 
 -spec read_enum(non_neg_integer(), binary())->{non_neg_integer(), binary()}.
 read_enum(ValMax, <<V:8/little-unsigned-integer, R/binary>>) when (V =< ValMax)-> {V, R}.
+
+-spec read_enum16(non_neg_integer(), binary())->{non_neg_integer(), binary()}.
+read_enum16(ValMax, <<V:16/little-unsigned-integer, R/binary>>) when (V =< ValMax)-> {V, R}.
 
 -spec read_struct(atom(), binary())->{tuple(), binary()}.
 read_struct(T, B) -> T:deserialize(B).

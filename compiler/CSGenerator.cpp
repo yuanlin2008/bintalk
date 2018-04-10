@@ -7,7 +7,7 @@ DECLARE_CG(CSGenerator, cs);
 
 static void generateEnum(CodeFile& f, Enum* e)
 {
-	f.output("public enum %s : byte", e->getNameC());
+	f.output("public enum %s : %s", e->getNameC(), e->isEnum16()?"ushort":"byte");
 	f.indent("{");
 	for(size_t i = 0; i < e->items_.size(); i++)
 		f.output("%s,", e->items_[i].c_str());
@@ -19,7 +19,7 @@ static void generateEnum(CodeFile& f, Enum* e)
 	f.indent("{");
 	f.output("public static bool read(bintalk.IReader r, ref %s v, uint maxValue)", e->getNameC());
 	f.indent("{");
-	f.output("byte e = 0;");
+	f.output("%s e = 0;", e->isEnum16()?"ushort":"byte");
 	f.output("if(!read(r, ref e, 0)) return false;");
 	f.output("v = (%s)e;", e->getNameC());
 	f.output("return true;");
@@ -29,7 +29,7 @@ static void generateEnum(CodeFile& f, Enum* e)
 	f.indent("{");
 	f.output("public static void write(bintalk.IWriter w, %s v)", e->getNameC());
 	f.indent("{");
-	f.output("write(w, (byte)v);");
+	f.output("write(w, (%s)v);", e->isEnum16()?"ushort":"byte");
 	f.recover("}");
 	f.recover("}");
 	f.recover("}");
