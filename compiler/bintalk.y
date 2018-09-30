@@ -21,7 +21,6 @@ int yylex (void);
 %token				TOKEN_IDENTIFIER
 %token				TOKEN_ENUM
 %token				TOKEN_STRUCT
-%token				TOKEN_SERVICE
 %token				TOKEN_INT64
 %token				TOKEN_UINT64
 %token				TOKEN_DOUBLE
@@ -57,8 +56,6 @@ definition:
 	enumeration
 	|
 	structure
-	|
-	service
     ;
 
 /*enumeration*/
@@ -171,78 +168,6 @@ struct_field:
 	}
 	;
 	
-/*service*/
-service:
-	TOKEN_SERVICE
-	TOKEN_IDENTIFIER
-	{
-		// Check service name.
-		if(gContext.findDefinition($2))
-		{ 
-			gContext.error("duplicated definition \"%s\".\n", $2.c_str()); 
-			YYERROR; 
-		};
-		
-		// Init current service.
-		gContext.curService_ = Service();
-		gContext.curService_.name_ = $2;
-		gContext.curService_.file_ = gContext.curFilename_;
-		gContext.curMethod_ = Method();
-	}
-	'{' service_methods '}'
-	{
-		// Add this service.
-		Service* s = new Service(gContext.curService_);
-		gContext.definitions_.push_back(s);
-	}
-	;
-
-/*service_methods*/
-service_methods:
-	service_methods service_method
-	|
-	/*empty*/
-	;
-
-/*service_method*/
-service_method:
-	TOKEN_IDENTIFIER '(' service_method_params ')' ';'
-	{
-		if(gContext.curService_.findMethod($1))
-		{
-			gContext.error("duplicated method name\"%s\"", $1.c_str());
-			YYERROR;
-		}
-		gContext.curMethod_.name_ = $1;
-		gContext.curMethod_.mid_ = gContext.curService_.methods_.size();
-		gContext.curService_.methods_.push_back(gContext.curMethod_);
-		gContext.curMethod_ = Method();
-	}
-	;
-
-/*service_method_params*/
-service_method_params:
-	service_method_params ',' service_method_param
-	|
-	service_method_param
-	|
-	/*empty*/
-	;
-
-/*service_method_param*/
-service_method_param:
-	field_type 	TOKEN_IDENTIFIER
-	{
-		if(gContext.curMethod_.findField($2))
-		{
-			gContext.error("duplicated param name\"%s\"", $2.c_str());
-			YYERROR;
-		}
-		gContext.curField_.name_ = $2;
-		gContext.curMethod_.fields_.push_back(gContext.curField_);
-		gContext.curField_ = Field();
-	}
-	;
 	
 /*field_type*/
 field_type:
@@ -295,11 +220,6 @@ field_data_type:
 	TOKEN_IDENTIFIER	
 	{
 		Definition* d = gContext.findDefinition($1);
-		if(!d || d->getService())
-		{
-			gContext.error("invalid type \"%s\"", $1.c_str());
-			YYERROR;
-		}
 		if(d->getEnum())
 		{
 			gContext.curField_.type_ = (Field::FT_ENUM); 

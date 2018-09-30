@@ -103,28 +103,6 @@ static const char* getFieldFuncName(Field& f)
 	return n.c_str();
 }
 
-static void generateStubMethodDecl(CodeFile& f, Method& m)
-{
-	f.listBegin(",", false, "void %s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s %s", getFieldCppParamType(field, true), field.getNameC());
-	}
-	f.listEnd(");");
-}
-
-static void generateProxyMethodDecl(CodeFile& f, Method& m)
-{
-	f.listBegin(",", false, "virtual bool %s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s %s", getFieldCppParamType(field, false), field.getNameC());
-	}
-	f.listEnd(") = 0;");
-}
-
 static void generateStructDecl(CodeFile& f, Struct* s)
 {
 	f.output("struct %s", s->getNameC());
@@ -137,53 +115,6 @@ static void generateStructDecl(CodeFile& f, Struct* s)
 	f.output("%s();", s->getNameC());
 	f.output("void serialize(bintalk::BinaryWriter* w) const;");
 	f.output("bool deserialize(bintalk::BinaryReader* r);");
-	f.recover("};");
-}
-
-static void generateStubDecl(CodeFile& f, Service* s)
-{
-	f.output("class %sStub", s->getNameC());
-	f.indent("{");
-	f.output("public:");
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateStubMethodDecl(f, s->methods_[i]);
-	f.output("protected:");
-	f.output("virtual bintalk::BinaryWriter* methodBegin() = 0;");
-	f.output("virtual void methodEnd() = 0;");
-	f.recover("};");
-}
-
-static void generateProxyDecl(CodeFile& f, Service* s)
-{
-	f.output("class %sProxy", s->getNameC());
-	f.indent("{");
-	f.output("public:");
-	f.output("typedef class %sDispatcher Dispatcher;", s->getNameC());
-	// Generate methed id.
-	f.output("enum MID");
-	f.indent("{");
-	for(size_t i = 0; i < s->methods_.size(); i++)
-	{
-		Method& method = s->methods_[i];
-		f.output("MID_%s = %d,", method.name_.c_str(), method.mid_);
-	}
-	f.recover("};");
-	f.output("virtual bool filterMethod(%sProxy::MID mid) { return true; }", s->getNameC());
-	for(size_t i = 0; i < s->methods_.size(); i++)	
-		generateProxyMethodDecl(f, s->methods_[i]);
-	f.recover("};");
-}
-
-static void generateDispatcherDecl(CodeFile& f, Service* s)
-{
-	f.output("class %sDispatcher", s->getNameC());
-	f.indent("{");
-	f.output("public:");
-	f.output("typedef class %sProxy Proxy;", s->getNameC());
-	f.output("static bool dispatch(bintalk::BinaryReader* reader, %sProxy* p);", s->getNameC());
-	f.output("protected:");
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		f.output("static bool %s(bintalk::BinaryReader* r, %sProxy* p);", s->methods_[i].getNameC(), s->getNameC());
 	f.recover("};");
 }
 
@@ -234,76 +165,6 @@ static void generateStructImp(CodeFile& f, Struct* s)
 	f.recover("}");
 }
 
-static void generateStubMethodImp(CodeFile& f, Service*s, Method& m)
-{
-	f.listBegin(",", false, "void %sStub::%s(", s->getNameC(), m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s %s", getFieldCppParamType(field, true), field.getNameC());
-	}
-	f.listEnd(")");
-	f.indent("{");
-	f.output("bintalk::BinaryWriter* __w__ = methodBegin();");
-	f.output("bintalk::MID __mid__ = %d;", m.mid_);
-	f.output("bintalk::ProtocolWriter::writeMID(__w__, __mid__);");
-	generateFieldContainerSCode(f, &m);
-	f.output("methodEnd();");
-	f.recover("}");
-}
-
-static void generateStubImp(CodeFile& f, Service* s)
-{
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateStubMethodImp(f, s, s->methods_[i]);
-}
-
-static void generateDispatcherMethodImp(CodeFile&f, Method& m, const std::string& svcName)
-{
-	f.output("bool %sDispatcher::%s(bintalk::BinaryReader* __r__, %sProxy* __p__)", svcName.c_str(), m.getNameC(), svcName.c_str());
-	f.indent("{");
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		if(getFieldCppDefault(field))
-			f.output("%s %s=%s;", getFieldCppType(field), field.getNameC(), getFieldCppDefault(field));
-		else
-			f.output("%s %s;", getFieldCppType(field), field.getNameC());
-	}
-	generateFieldContainerDSCode(f, &m);
-	f.listBegin(",", false, "return __p__->%s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s", field.getNameC());
-	}
-	f.listEnd(");");
-	f.recover("}");
-}
-
-static void generateDispatcherImp(CodeFile& f, Service* s)
-{
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateDispatcherMethodImp(f, s->methods_[i], s->name_);
-
-	f.output("bool %sDispatcher::dispatch(bintalk::BinaryReader* __r__, %sProxy* __p__)", s->getNameC(), s->getNameC());
-	f.indent("{");
-	f.output("bintalk::MID __mid__;");
-	f.output("if(!bintalk::ProtocolReader::readMID(__r__, __mid__)) return false;");
-	f.output("if(__p__->filterMethod((%sProxy::MID)__mid__)) return false;", s->getNameC());
-	f.output("switch(__mid__)");
-	f.indent("{");
-	for(size_t i = 0; i < s->methods_.size(); i++)
-	{
-		Method& method = s->methods_[i];
-		f.output("case %d:{if(!%s(__r__, __p__)) return false;}break;", i, method.getNameC());
-	}
-	f.output("default: return false;");
-	f.recover("}");
-	f.output("return true;");
-	f.recover("}");
-}
-
 static void generateHFile()
 {
 	std::string fn = gOptions.output_ + gOptions.inputFS_ + ".h";
@@ -327,12 +188,6 @@ static void generateHFile()
 			generateEnumDecl(f, definition->getEnum());
 		else if (definition->getStruct())
 			generateStructDecl(f, definition->getStruct());
-		else if (definition->getService())
-		{
-			generateStubDecl(f, definition->getService());
-			generateProxyDecl(f, definition->getService());
-			generateDispatcherDecl(f, definition->getService());
-		}
 	}
 	f.output("#endif");
 }
@@ -348,11 +203,6 @@ static void generateCPPFile()
 			continue;
 		if (definition->getStruct())
 			generateStructImp(f, definition->getStruct());
-		else if (definition->getService())
-		{
-			generateStubImp(f, definition->getService());
-			generateDispatcherImp(f, definition->getService());
-		}
 	}
 }
 

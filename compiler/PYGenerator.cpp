@@ -117,75 +117,6 @@ static void generateStruct(CodeFile& f, Struct* s)
 	f.output("protocol_reader.type_%s = %sReader", s->getNameC(), s->getNameC());
 }
 
-static void generateServiceStubMethod(CodeFile& f, Method& m)
-{
-	f.listBegin(",", false, "def %s(", m.getNameC());
-	f.listItem("self");
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s", field.getNameC());
-	}
-	f.listEnd("):");
-	f.indent();
-	f.output("__b__ = []");
-	f.output("protocol_writer.write_mid(%d, __b__)", m.mid_);
-	generateFieldContainerSCode(f, &m, false);
-	f.output("self.call(__b__)");
-	f.recover();
-}
-
-static void generateServiceStub(CodeFile& f, Service* s)
-{
-	f.output("class %sStub(object):", s->getNameC());
-	f.indent();
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateServiceStubMethod(f, s->methods_[i]);
-	f.recover();
-}
-
-static void generateServiceDispatcherMethod(CodeFile& f, Service* s, Method& m)
-{
-	f.output("def %s_%s(__b__, __p__, __proxy__):", s->getNameC(), m.getNameC());
-	f.indent();
-	generateFieldContainerDSCode(f, &m, false);
-	f.listBegin(",", false, "__proxy__.%s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-		f.listItem("%s", m.fields_[i].getNameC());
-	f.listEnd(")");
-	f.output("return __p__");
-	f.recover();
-	f.output("%sDispatcher.append(%s_%s)", s->getNameC(), s->getNameC(), m.getNameC());
-}
-
-static void generateServiceDispatcher(CodeFile& f, Service* s)
-{
-	f.output("class %sMID(object):", s->getNameC());
-	f.indent();
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		f.output("%s = %d", s->methods_[i].name_.c_str(), s->methods_[i].mid_);
-	f.recover();
-
-	f.output("%sDispatcher = []", s->getNameC());
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateServiceDispatcherMethod(f, s, s->methods_[i]);
-	f.output("def dispatch%s(__b__, __p__, __proxy__):", s->getNameC());
-	f.indent();
-	f.output("__id__, __p__ = protocol_reader.read_mid(__b__, __p__)");
-	f.output("if __proxy__.filterMID(__id__) == True:");
-	f.indent();
-	f.output("return __p__");
-	f.recover();
-	f.output("return %sDispatcher[__id__](__b__, __p__, __proxy__)", s->getNameC());
-	f.recover();
-}
-
-static void generateService(CodeFile& f, Service* s)
-{
-	generateServiceStub(f, s);
-	generateServiceDispatcher(f, s);
-}
-
 void PYGenerator::generate()
 {
 	std::string fn = gOptions.output_ + gOptions.inputFS_ + ".py";
@@ -208,7 +139,5 @@ void PYGenerator::generate()
 			generateEnum(f, definition->getEnum());
 		else if (definition->getStruct())
 			generateStruct(f, definition->getStruct());
-		else if (definition->getService())
-			generateService(f, definition->getService());
 	}
 }

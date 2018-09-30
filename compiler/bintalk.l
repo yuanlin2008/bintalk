@@ -38,7 +38,6 @@ NL [\r?\n]
 
 enum            return TOKEN_ENUM;
 struct			return TOKEN_STRUCT;
-service			return TOKEN_SERVICE;
 int64			return TOKEN_INT64;
 uint64			return TOKEN_UINT64;
 double			return TOKEN_DOUBLE;
