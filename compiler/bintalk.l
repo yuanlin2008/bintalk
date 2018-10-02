@@ -32,7 +32,7 @@ NL [\r?\n]
 %array
 %option never-interactive
 %option noyywrap
-
+%option nounistd
 
 %%
 

@@ -30,6 +30,7 @@ set(GEN_FILES
 	ERLGenerator.cpp
 	CSGenerator.cpp
 	LUAGenerator.cpp
+	UE4Generator.cpp
 	)
 set(MISC_FILES
 	bintalk.cpp
