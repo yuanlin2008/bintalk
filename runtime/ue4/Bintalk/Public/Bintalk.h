@@ -91,13 +91,13 @@ namespace Bintalk
 		void writeENUM(T v)
 		{
 			uint8 e = (uint8)v;
-			w->write(&e, sizeof(uint8));
+			write(&e, sizeof(uint8));
 		}
 		template<class T>
 		void writeENUMA(const TArray<T>& v)
 		{
-			int32 s = v.Num()
-			writeDynSize(w, s);
+			int32 s = v.Num();
+			writeDynSize(s);
 			for (int32 i = 0; i < s; i++)
 				writeENUM(v[i]);
 		}
@@ -120,7 +120,7 @@ namespace Bintalk
 		template<class T>
 		void writeUSER(const T& v)
 		{
-			v.serialize(w);
+			v.serialize(this);
 		}
 		template<class T>
 		void writeUSERA(const TArray<T>& v)
@@ -264,8 +264,7 @@ namespace Bintalk
 		template<class T>
 		bool readUSER(T& v, int32 maxArray, int32 maxValue)
 		{
-			v.deserialize(r);
-			return true;
+			return v.deserialize(this);
 		}
 		template<class T>
 		bool readUSERA(TArray<T>& v, int32 maxArray, int32 maxValue)
