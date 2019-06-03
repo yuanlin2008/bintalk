@@ -7,13 +7,12 @@ DECLARE_CG(LUAGenerator, lua);
 
 static void generateEnum(CodeFile& f, Enum* e)
 {
-    f.output("%s =", e->getNameC());
-    f.output("{");
+    f.output("BintalkTypes.%s = BintalkTypes._create_enum_type(\"%s\", {", e->getNameC(), e->getNameC());
     f.indent();
     for (size_t i = 0; i < e->items_.size(); i++)
         f.output("%s = %d,", e->items_[i].c_str(), i);
     f.recover();
-    f.output("}");
+    f.output("})");
 }
 static const char* getFieldDefault(Field& f)
 {
@@ -55,15 +54,26 @@ static const char* getFieldTypeName(Field& f)
     return "";
 }
 
+static void generateFieldContainerClass(CodeFile& f, FieldContainer* fc)
+{
+    for (size_t i = 0; i < fc->fields_.size(); i++)
+    {
+        Field& field = fc->fields_[i];
+        if (field.isArray())
+            f.output("%s = BintalkTypes.array(),", field.getNameC());
+        else
+            f.output("%s = BintalkTypes.%s(),", field.getNameC(), getFieldTypeName(field));
+    }
+}
 static void generateFieldContainerSCode(CodeFile& f, FieldContainer* fc)
 {
     for (size_t i = 0; i < fc->fields_.size(); i++)
     {
         Field& field = fc->fields_[i];
         if (field.isArray())
-            f.output("BTK_Writer.type_array(BTK_Writer.type_%s, v.%s, b)", getFieldTypeName(field), field.getNameC());
+            f.output("BintalkWriter.array(BintalkWriter.%s, v.%s, b)", getFieldTypeName(field), field.getNameC());
         else
-            f.output("BTK_Writer.type_%s(v.%s, b)", getFieldTypeName(field), field.getNameC());
+            f.output("BintalkWriter.%s(v.%s, b)", getFieldTypeName(field), field.getNameC());
     }
 }
 static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc)
@@ -72,23 +82,29 @@ static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc)
     {
         Field& field = fc->fields_[i];
         if (field.isArray())
-            f.output("v.%s, p = BTK_Reader.type_array(b, p, BTK_Reader.type_%s, 0X%X, 0X%X)", field.getNameC(), getFieldTypeName(field), field.maxArray_, field.maxValue_);
+            f.output("v.%s, p = BintalkReader.array(b, p, BintalkReader.%s, 0X%X, 0X%X)", field.getNameC(), getFieldTypeName(field), field.maxArray_, field.maxValue_);
         else
-            f.output("v.%s, p = BTK_Reader.type_%s(b, p, 0X%X)", field.getNameC(), getFieldTypeName(field), field.maxValue_);
+            f.output("v.%s, p = BintalkReader.%s(b, p, 0X%X)", field.getNameC(), getFieldTypeName(field), field.maxValue_);
     }
 }
 
 static void generateStruct(CodeFile& f, Struct* s)
 {
-    f.output("BTK_Writer.type_%s = function(v, b)", s->getNameC());
+    f.output("BintalkTypes.%s = BintalkTypes._create_usertype(\"%s\", {", s->getNameC(), s->getNameC());
+    f.indent();
+    generateFieldContainerClass(f, s);
+    f.recover();
+    f.output("})");
+
+    f.output("BintalkWriter.%s = function(v, b)", s->getNameC());
     f.indent();
     generateFieldContainerSCode(f, s);
     f.recover();
     f.output("end");
 
-    f.output("BTK_Reader.type_%s = function(b, p)", s->getNameC());
+    f.output("BintalkReader.%s = function(b, p)", s->getNameC());
     f.indent();
-    f.output("local v = {}");
+    f.output("local v = BintalkTypes.%s()", s->getNameC());
     generateFieldContainerDSCode(f, s);
     f.output("return v, p");
     f.recover();
@@ -99,8 +115,9 @@ void LUAGenerator::generate()
 {
     std::string fn = gOptions.output_ + gOptions.inputFS_ + ".lua";
     CodeFile f(fn);
-    f.output("require(\"bintalk.protocol_reader\")");
-    f.output("require(\"bintalk.protocol_writer\")");
+    f.output("require(\"bintalk.types\")");
+    f.output("require(\"bintalk.reader\")");
+    f.output("require(\"bintalk.writer\")");
     for (std::set<std::string>::iterator iter = gContext.imported_.begin();
         iter != gContext.imported_.end(); ++iter)
     {
