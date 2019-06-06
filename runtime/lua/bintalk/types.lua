@@ -1,5 +1,9 @@
-
+---Create a enum table.
+---@param name string @enum name
+---@param e table<string, number> @original enum table
+---@return table<string, number> @wrapped enum table.
 local function create_enum_type(name, e)
+    --enum metatable.
     local mt = {}
     mt.__index = function(t, k)
         local v = e[k]
@@ -14,10 +18,25 @@ local function create_enum_type(name, e)
     mt.__call = function(t)
         return 0
     end
+    mt.__pairs = function(t)
+        local function iter(t, k)
+            local v
+            k, v = next(e, k)
+            if v then
+                return k,v
+            end
+        end
+        return iter, e, nil
+    end
     return setmetatable({}, mt)
 end
 
+---Create a user type object factory function.
+---@param name string @type name
+---@param class table<string, any> @type default property table.
+---@return fun() @factory function.
 local function create_user_type(name, class)
+    -- user type metatable.
     local mt = {}
     mt.__index = function(t, k)
         -- Get default value.
