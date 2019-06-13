@@ -1,3 +1,33 @@
+BintalkTypes = {}
+
+local function type_number(v)
+    if not v then return 0 end
+    assert(type(v) == "number")
+    return v 
+end
+
+local function type_boolean(v)
+    if not v then return false end
+    assert(type(v) == "boolean")
+    return v 
+end
+
+local function type_string(v)
+    if not v then return "" end
+    assert(type(v) == "string")
+    return v 
+end
+
+local function type_array(v, type)
+    if not v then return {} end
+    assert(type(v) == "table")
+    local array = {}
+    for i,item in ipairs(v) do
+        table.insert(array, BintalkTypes[type](item))
+    end
+    return array 
+end
+
 ---Create a enum table.
 ---@param name string @enum name
 ---@param e table<string, number> @original enum table
@@ -68,22 +98,22 @@ local function create_user_type(name, class)
 end
 
 BintalkTypes = {
-    int64	= function() return 0 end,
-    uint64 = function() return 0 end,
-    double = function() return 0 end,
-    float	= function() return 0 end,
-	int32	= function() return 0 end,
-    uint32 = function() return 0 end,
-    int16	= function() return 0 end,
-    uint16 = function() return 0 end,
-    int8	= function() return 0 end,
-    uint8	= function() return 0 end,
-    bool	= function() return false end,
-    string	= function() return "" end,
-    binary	= function() return "" end,
-    array	= function() return {} end,
-    enum	= function() return 0 end,
-    enum16	= function() return 0 end,
+    int64	= type_number,
+    uint64 = type_number,
+    double = type_number,
+    float	= type_number,
+	int32	= type_number,
+    uint32 = type_number,
+    int16	= type_number,
+    uint16 = type_number,
+    int8	= type_number,
+    uint8	= type_number,
+    bool	= type_number,
+    string	= type_string,
+    binary	= type_string,
+    array	= type_array,
+    enum	= type_number,
+    enum16	= type_number,
     _create_enum_type = create_enum_type,
     _create_usertype = create_user_type,
 }
