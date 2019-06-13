@@ -178,7 +178,8 @@ BintalkReader =
 	bool	= type_bool,
 	string	= type_string,
 	binary	= type_binary,
-	array	= type_array,
 	enum	= type_enum,
 	enum16	= type_enum16,
+
+	array	= type_array,
 }

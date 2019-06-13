@@ -7,30 +7,17 @@ DECLARE_CG(LUAGenerator, lua);
 
 static void generateEnum(CodeFile& f, Enum* e)
 {
-    f.output("BintalkTypes.%s = BintalkTypes._create_enum_type(\"%s\", {", e->getNameC(), e->getNameC());
+    const char* name = e->getNameC();
+    f.output("local %s = {", name);
     f.indent();
     for (size_t i = 0; i < e->items_.size(); i++)
         f.output("%s = %d,", e->items_[i].c_str(), i);
     f.recover();
-    f.output("})");
+    f.output("}");
+    f.output("%s = { _enum = %s }", name, name);
+    f.output("BintalkTypes.%s = setmetatable(%s, BintalkTypes._enum_mt)", name, name);
 }
-static const char* getFieldDefault(Field& f)
-{
-    static std::string name;
-    if (f.isArray())
-        name = "[]";
-    else if (f.type_ == Field::FT_BOOL)
-        name = "False";
-    else if (f.type_ == Field::FT_STRING)
-        name = "\"\"";
-    else if (f.type_ == Field::FT_BINARY)
-        name = "\"\"";
-    else if (f.type_ == Field::FT_USER)
-        name = f.userType_->name_ + "()";
-    else
-        name = "0";
-    return name.c_str();
-}
+
 static const char* getFieldTypeName(Field& f)
 {
     switch (f.type_)
@@ -54,15 +41,34 @@ static const char* getFieldTypeName(Field& f)
     return "";
 }
 
-static void generateFieldContainerClass(CodeFile& f, FieldContainer* fc)
+static void generateFieldDefaults(CodeFile& f, FieldContainer* fc)
 {
     for (size_t i = 0; i < fc->fields_.size(); i++)
     {
         Field& field = fc->fields_[i];
+        const char* name = field.getNameC();
+        const char* type = getFieldTypeName(field);
         if (field.isArray())
-            f.output("%s = BintalkTypes.array(),", field.getNameC());
+            f.output("%s = BintalkTypes.array(BintalkTypes.%s),", name, type);
         else
-            f.output("%s = BintalkTypes.%s(),", field.getNameC(), getFieldTypeName(field));
+            f.output("%s = BintalkTypes.%s(),", name, type);
+    }
+}
+static void generateFieldInitCode(CodeFile& f, FieldContainer* fc)
+{
+    for (size_t i = 0; i < fc->fields_.size(); i++)
+    {
+        Field& field = fc->fields_[i];
+        const char* name = field.getNameC();
+        const char* type = getFieldTypeName(field);
+        f.output("if v.%s then", name);
+        f.indent();
+        if (field.isArray())
+            f.output("s.%s = BintalkTypes.array(BintalkTypes.%s, v.%s)", name, type, name);
+        else
+            f.output("s.%s = BintalkTypes.%s(v.%s)", name, type, name);
+        f.recover();
+        f.output("end");
     }
 }
 static void generateFieldContainerSCode(CodeFile& f, FieldContainer* fc)
@@ -90,11 +96,23 @@ static void generateFieldContainerDSCode(CodeFile& f, FieldContainer* fc)
 
 static void generateStruct(CodeFile& f, Struct* s)
 {
-    f.output("BintalkTypes.%s = BintalkTypes._create_usertype(\"%s\", {", s->getNameC(), s->getNameC());
+    const char* name = s->getNameC();
+
+    f.output("local %s = {", name);
     f.indent();
-    generateFieldContainerClass(f, s);
+    generateFieldDefaults(f, s);
     f.recover();
-    f.output("})");
+    f.output("}");
+
+    f.output("BintalkTypes.%s = function(v)", name);
+    f.indent();
+    f.output("local s = {_defaults = %s, _values = {}}", name);
+    f.output("setmetatable(s, BintalkTypes._struct_mt)");
+    f.output("if not v then return s end");
+    generateFieldInitCode(f, s);
+    f.output("return s");
+    f.recover();
+    f.output("end");
 
     f.output("BintalkWriter.%s = function(v, b)", s->getNameC());
     f.indent();
