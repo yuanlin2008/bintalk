@@ -141,7 +141,7 @@ void LUAGenerator::generate()
     {
         std::string incFilename = *iter;
         incFilename = incFilename.substr(0, incFilename.find('.'));
-        f.output("require(\"%s\")", incFilename.c_str());
+        f.output("require(\"btk_gen.%s\")", incFilename.c_str());
     }
     for (size_t i = 0; i < gContext.definitions_.size(); i++)
     {
