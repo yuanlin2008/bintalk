@@ -220,6 +220,11 @@ field_data_type:
 	TOKEN_IDENTIFIER	
 	{
 		Definition* d = gContext.findDefinition($1);
+		if(!d)
+		{ 
+			gContext.error("invalid field type \"%s\".\n", $1.c_str()); 
+			YYERROR; 
+		}
 		if(d->getEnum())
 		{
 			gContext.curField_.type_ = (Field::FT_ENUM); 
