@@ -103,7 +103,11 @@ end
 local function type_bool(b, p)
 	local r
 	r, p = string.unpack("<B", b, p)
-	return (r == 0 and false or true), p
+	if r == 0 then
+		return false, p
+	else
+		return true, p
+	end
 end
 
 ---Read string

@@ -137,7 +137,7 @@ local function type_binary(v, b)
 end
 
 -- Write array of type t
----@param t fun 
+---@param t fun()
 ---@param v number @size
 ---@param b string[] @buffer.
 local function type_array(t, v, b)
