@@ -118,7 +118,7 @@ end
 local function type_string(b, p, valMax)
 	local l
 	l, p = type_dsize(b, p)
-	if l > valMax then
+	if valMax and l > valMax then
 		error("Invalid string length")
 	end
 	local r = string.sub(b, p, p+l-1)
