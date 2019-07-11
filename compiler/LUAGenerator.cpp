@@ -106,7 +106,12 @@ static void generateStruct(CodeFile& f, Struct* s)
 
     f.output("BintalkTypes.%s = function(v)", name);
     f.indent();
-    f.output("local s = {_defaults = %s, _values = {}}", name);
+    f.output("local _values = {");
+    f.indent();
+    generateFieldDefaults(f, s);
+    f.recover();
+    f.output("}");
+    f.output("local s = {_defaults = %s, _values = _values}", name);
     f.output("setmetatable(s, BintalkTypes._struct_mt)");
     f.output("if not v then return s end");
     generateFieldInitCode(f, s);

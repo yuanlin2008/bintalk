@@ -73,11 +73,7 @@ function struct_mt.__index(t, k)
         error("Attempt to get invalid struct field:"..k)
     end
     -- Get value.
-    local v = t._values[k]
-    if v then
-        return v
-    end
-    return dv
+    return rawget(t._values, k)
 end
 function struct_mt.__newindex(t, k, v)
     -- Get default value.
