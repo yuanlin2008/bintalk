@@ -57,6 +57,9 @@ def type_string(v, b):
 def type_enum(v, b):
     type_uint8(v, b)
 
+def type_enum16(v, b):
+    type_uint16(v, b)
+
 def type_binary(v, b):
 	l = len(v)
 	type_dsize(l, b)

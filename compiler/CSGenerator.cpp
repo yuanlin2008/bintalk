@@ -7,7 +7,7 @@ DECLARE_CG(CSGenerator, cs);
 
 static void generateEnum(CodeFile& f, Enum* e)
 {
-	f.output("public enum %s : byte", e->getNameC());
+	f.output("public enum %s : %s", e->getNameC(), e->isEnum16()?"ushort":"byte");
 	f.indent("{");
 	for(size_t i = 0; i < e->items_.size(); i++)
 		f.output("%s,", e->items_[i].c_str());
@@ -19,7 +19,7 @@ static void generateEnum(CodeFile& f, Enum* e)
 	f.indent("{");
 	f.output("public static bool read(bintalk.IReader r, ref %s v, uint maxValue)", e->getNameC());
 	f.indent("{");
-	f.output("byte e = 0;");
+	f.output("%s e = 0;", e->isEnum16()?"ushort":"byte");
 	f.output("if(!read(r, ref e, 0)) return false;");
 	f.output("v = (%s)e;", e->getNameC());
 	f.output("return true;");
@@ -29,7 +29,7 @@ static void generateEnum(CodeFile& f, Enum* e)
 	f.indent("{");
 	f.output("public static void write(bintalk.IWriter w, %s v)", e->getNameC());
 	f.indent("{");
-	f.output("write(w, (byte)v);");
+	f.output("write(w, (%s)v);", e->isEnum16()?"ushort":"byte");
 	f.recover("}");
 	f.recover("}");
 	f.recover("}");
@@ -197,135 +197,6 @@ static void generateStruct(CodeFile& f, Struct* s)
 	f.recover("}");
 }
 
-static void generateStubMethod(CodeFile& f, Service* s, Method& m)
-{
-	f.listBegin(",", false, "public void %s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		std::string tn;
-		getFieldTypeName(field, tn); 
-		f.listItem("%s %s", tn.c_str(), field.getNameC());
-	}
-	f.listEnd(")");
-	f.indent("{");
-	f.output("bintalk.IWriter __w__ = methodBegin();");
-	f.output("bintalk.ProtocolWriter.writeMid(__w__, %d);", m.mid_);
-	generateFieldContainerSCode(f, &m);
-	f.output("methodEnd();");
-	f.recover("}");
-}
-
-static void generateServiceStub(CodeFile& f, Service* s)
-{
-	f.output("public abstract class %sStub", s->getNameC());
-	f.indent("{");
-	f.output("protected abstract bintalk.IWriter methodBegin();");
-	f.output("protected abstract void methodEnd();");
-	// methods.
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateStubMethod(f, s, s->methods_[i]);
-	f.recover();
-	f.output("}");
-}
-
-static void generateProxyAbstractMethod(CodeFile& f, Method& m)
-{
-	f.listBegin(",", false, "bool %s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		std::string tn;
-		getFieldTypeName(field, tn); 
-		f.listItem("%s %s",tn.c_str(), field.getNameC());
-	}
-	f.listEnd(");");
-}
-
-static void generateServiceProxy(CodeFile& f, Service* s)
-{
-	f.output("public enum %sProxyMID", s->getNameC());
-	f.indent("{");
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		f.output("%s,", s->methods_[i].name_.c_str());
-	f.recover("}");
-
-	f.output("public interface %sProxy", s->getNameC());
-	f.indent("{");
-	f.output("bool filterMethod(%sProxyMID mid);", s->getNameC());
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateProxyAbstractMethod(f, s->methods_[i]);
-	f.recover("}");
-}
-
-static void generateMethodDispatcher(CodeFile& f, Service* s, Method& m)
-{
-	f.output("public static bool %s(bintalk.IReader __r__, %sProxy __p__)", m.getNameC(), s->getNameC());
-	f.indent("{");
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		std::string tn;
-		getFieldTypeName(field, tn); 
-		std::string dft;
-		getFieldDefault(field, dft);
-		f.output("%s %s= %s;", 
-			tn.c_str(),
-			field.getNameC(),
-			dft.c_str());
-	}
-	generateFieldContainerDSCode(f, &m);
-	f.listBegin(",", false, "return __p__.%s(", m.getNameC());
-	for(size_t i = 0; i < m.fields_.size(); i++)
-	{
-		Field& field = m.fields_[i];
-		f.listItem("%s", field.getNameC());
-	}
-	f.listEnd(");");
-	f.recover("}");
-}
-
-static void generateServiceDispatcher(CodeFile& f, Service* s)
-{
-	f.output("public static class %sDispatcher", s->getNameC());
-	f.indent("{");
-	// deserializations.
-	for(size_t i = 0; i < s->methods_.size(); i++)
-		generateMethodDispatcher(f, s, s->methods_[i]);
-	// dispatch function.
-	f.output("public static bool dispatch(bintalk.IReader __r__, %sProxy __p__)", s->getNameC());
-	f.indent("{");
-	f.output("ushort __mid__ = 0;");
-	f.output("if(!bintalk.ProtocolReader.readMid(__r__, ref __mid__)) return false;");
-	f.output("if(__p__.filterMethod((%sProxyMID)__mid__)) return false;", s->getNameC());
-	f.output("switch(__mid__)");
-	f.indent("{");
-	for(size_t m = 0; m < s->methods_.size(); m++)
-	{
-		Method& method = s->methods_[m];
-		f.output("case %d:", method.mid_);
-		f.indent("{");
-		f.output("if(!%s(__r__, __p__)) return false;", method.getNameC());
-		f.recover("}");
-		f.output("break;");
-	}
-	f.output("default:");
-	f.indent("{");
-	f.output("return false;");
-	f.recover("}");
-	f.recover("}");
-	f.output("return true;");
-	f.recover("}");
-	f.recover("}");
-}
-
-static void generateService(CodeFile& f, Service* s)
-{
-	generateServiceStub(f, s);
-	generateServiceProxy(f, s);
-	generateServiceDispatcher(f, s);
-}
-
 void CSGenerator::generate()
 {
 	CodeFile f(gOptions.output_ + gOptions.inputFS_ + ".cs");
@@ -339,7 +210,5 @@ void CSGenerator::generate()
 			generateEnum(f, definition->getEnum());
 		else if (definition->getStruct())
 			generateStruct(f, definition->getStruct());
-		else if (definition->getService())
-			generateService(f, definition->getService());
 	}
 }

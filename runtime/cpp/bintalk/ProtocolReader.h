@@ -46,6 +46,27 @@ public:
 		for(UINT32 i = 0; i < s; i++) if(!readENUM(r, v[i], 0, maxValue)) return false;
 		return true;
 	}
+	// Enum16
+	template<class T>
+	static bool readENUM16(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)
+	{ 
+		UINT16 e;
+		if(!readUINT16(r, e, maxArray, maxValue))
+			return false;
+		if((UINT32)e > maxValue)
+			return false;
+		v = (T)e;
+		return true;
+	}
+	template<class T>
+	static bool readENUM16A(BinaryReader* r, std::vector<T>& v, UINT32 maxArray, UINT32 maxValue)
+	{	
+		UINT32 s;
+		if(!readDynSize(r, s) || s > maxArray) return false;
+		v.resize(s);
+		for(UINT32 i = 0; i < s; i++) if(!readENUM16(r, v[i], 0, maxValue)) return false;
+		return true;
+	}
 	// User
 	template<class T>
 	static bool readUSER(BinaryReader* r, T& v, UINT32 maxArray, UINT32 maxValue)

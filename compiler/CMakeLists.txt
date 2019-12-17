@@ -23,16 +23,14 @@ set(PARSER_FILES
 	)
 set(SPEC_FILES
 	Definition.h
-	Enum.h
-	Field.h
-	Service.h
-	Struct.h
 	)
 set(GEN_FILES
 	CppGenerator.cpp
 	PYGenerator.cpp
 	ERLGenerator.cpp
 	CSGenerator.cpp
+	LUAGenerator.cpp
+	UE4Generator.cpp
 	)
 set(MISC_FILES
 	bintalk.cpp

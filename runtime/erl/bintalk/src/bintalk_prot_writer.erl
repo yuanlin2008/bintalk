@@ -18,6 +18,7 @@
 -export([write_string/1]).
 -export([write_binary/1]).
 -export([write_enum/1]).
+-export([write_enum16/1]).
 -export([write_struct/1]).
 
 -spec write_mid(Mid::integer()) -> binary().
@@ -72,6 +73,9 @@ write_binary(V) -> [write_dyn_size(byte_size(V)),V].
 
 -spec write_enum(non_neg_integer())->binary().
 write_enum(V) -> write_uint8(V).
+
+-spec write_enum16(non_neg_integer())->binary().
+write_enum16(V) -> write_uint16(V).
 
 -spec write_struct(tuple())->iolist().
 write_struct(V) -> 

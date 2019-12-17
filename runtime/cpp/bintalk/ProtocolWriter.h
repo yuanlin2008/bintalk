@@ -42,6 +42,21 @@ public:
 		for(UINT32 i = 0; i < s; i++)
 			writeENUM(w, v[i]);
 	}
+	// Enum16
+	template<class T>
+	static void writeENUM16(BinaryWriter* w, T v)
+	{ 
+		UINT16 e = (UINT16)v;
+		writeUINT16(w, e);
+	}
+	template<class T>
+	static void writeENUM16A(BinaryWriter* w, const std::vector<T>& v)
+	{ 
+		UINT32 s = (UINT32)v.size();
+		writeDynSize(w, s);
+		for(UINT32 i = 0; i < s; i++)
+			writeENUM16(w, v[i]);
+	}
 	// User
 	template<class T>
 	static void writeUSER(BinaryWriter* w, const T& v)

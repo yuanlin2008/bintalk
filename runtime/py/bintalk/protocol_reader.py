@@ -62,6 +62,12 @@ def type_enum(b, p, valMax):
     if e > valMax:
         raise
     return e, p
+
+def type_enum16(b, p, valMax):
+    e, p = type_uint16(b, p, 0)
+    if e > valMax:
+        raise
+    return e, p
     
 def type_binary(b, p, valMax):
 	l, p = type_dsize(b, p)
@@ -70,7 +76,7 @@ def type_binary(b, p, valMax):
 	return b[p:p+l], p+l
 
 def read_mid(b, p):
-    return type_uint16(b, p, 0);
+    return type_uint16(b, p, 0)
 
 def read(b, p, t, arrMax, valMax):
     if arrMax > 0:

@@ -7,10 +7,6 @@
 #include <map>
 
 #include "Definition.h"
-#include "Field.h"
-#include "Enum.h"
-#include "Struct.h"
-#include "Service.h"
 
 class Context
 {
@@ -18,31 +14,29 @@ public:
 	Context();
 	~Context();
 
-	/** ±àÒëÔ´ÎÄ¼ş. */
+	/** ç¼–è¯‘æºæ–‡ä»¶. */
 	bool build();
 
-	/** ¸ù¾İÃû³Æ²éÕÒÒ»¸ö¶¨Òå. 
+	/** æ ¹æ®åç§°æŸ¥æ‰¾ä¸€ä¸ªå®šä¹‰. 
 	*/
 	Definition* findDefinition(const std::string& name);
 
-	/** Êä³öµ±Ç°ÎÄ¼şĞĞ±àÒë´íÎó. */
+	/** è¾“å‡ºå½“å‰æ–‡ä»¶è¡Œç¼–è¯‘é”™è¯¯. */
 	void error(const char* e, ...);
 
-	/** ËùÓĞÒÑ¾­±»°üº¬¹ıµÄÎÄ¼şÃû³Æ£¬·ÀÖ¹ÖØ¸´°üº¬. */
+	/** æ‰€æœ‰å·²ç»è¢«åŒ…å«è¿‡çš„æ–‡ä»¶åç§°ï¼Œé˜²æ­¢é‡å¤åŒ…å«. */
 	std::set<std::string>		imported_;
-	/** ¸ùÎÄ¼şÖ±½Ó°üº¬µÄÎÄ¼şÃû³Æ. */
+	/** æ ¹æ–‡ä»¶ç›´æ¥åŒ…å«çš„æ–‡ä»¶åç§°. */
 	std::vector<std::string>	rootImported_;
-	/** µ±Ç°±»½âÎöµÄÎÄ¼şÃû³Æ. */
+	/** å½“å‰è¢«è§£æçš„æ–‡ä»¶åç§°. */
 	std::string					curFilename_;
-	/** µ±Ç°±»½âÎöÎÄ¼şµÄĞĞºÅ. */
+	/** å½“å‰è¢«è§£ææ–‡ä»¶çš„è¡Œå·. */
 	int							lineno_;
-	/** Õâ¸öÔ´ÎÄ¼ş°üº¬µÄËùÓĞarpc¶¨Òå. */
+	/** è¿™ä¸ªæºæ–‡ä»¶åŒ…å«çš„æ‰€æœ‰arpcå®šä¹‰. */
 	std::vector<Definition*>	definitions_;
-	// µ±Ç°±àÒë×´Ì¬.
+	// å½“å‰ç¼–è¯‘çŠ¶æ€.
 	Enum		curEnum_;
 	Struct		curStruct_;
-	Service		curService_;
-	Method		curMethod_;
 	Field		curField_;
 };
 
