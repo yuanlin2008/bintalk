@@ -78,7 +78,7 @@ binary			return TOKEN_BINARY;
 						// Save current file state.
 						ImportedFile n;
 						n.fn_ = gContext.curFilename_;
-						n.ln_ = gContext.lineno_ + 1;	
+						n.ln_ = gContext.lineno_;// + 1;	
 						n.bs_ = YY_CURRENT_BUFFER;
 						importStack.push_back(n);
 						// Set new file state.!!!Remove the last \n
