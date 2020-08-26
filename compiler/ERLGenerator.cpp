@@ -65,7 +65,7 @@ static const char* getFieldVal(Field& f)
 		s = temp;
 	}
 	else if (f.type_ == Field::FT_USER)
-		s = f.userType_->getNameC();
+		s = getAtom(f.userType_->getNameC());
 	return s.c_str();
 }
 
