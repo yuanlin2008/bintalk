@@ -113,13 +113,6 @@ local function type_string(v, b)
 	b[#b+1] = v
 end
 
--- Write enum
----@param v number @size
----@param b string[] @buffer.
-local function type_enum(v, b)
-	type_uint8(v, b)
-end
-
 -- Write enum16
 ---@param v number @size
 ---@param b string[] @buffer.
@@ -163,7 +156,6 @@ BintalkWriter =
 	bool	= type_bool,
 	string	= type_string,
 	binary	= type_binary,
-	enum	= type_enum,
 	enum16	= type_enum16,
 
 	array	= type_array,

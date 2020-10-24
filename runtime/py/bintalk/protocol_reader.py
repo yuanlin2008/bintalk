@@ -57,12 +57,6 @@ def type_string(b, p, valMax):
 		raise
 	return b[p:p+l], p+l
     
-def type_enum(b, p, valMax):
-    e, p = type_uint8(b, p, 0)
-    if e > valMax:
-        raise
-    return e, p
-
 def type_enum16(b, p, valMax):
     e, p = type_uint16(b, p, 0)
     if e > valMax:

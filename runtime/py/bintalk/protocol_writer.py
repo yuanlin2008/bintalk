@@ -54,9 +54,6 @@ def type_string(v, b):
 	type_dsize(l, b)
 	b.append(v)
     
-def type_enum(v, b):
-    type_uint8(v, b)
-
 def type_enum16(v, b):
     type_uint16(v, b)
 

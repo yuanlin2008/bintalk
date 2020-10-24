@@ -1,6 +1,0 @@
-from distutils.core import setup
-setup(
-		name='bintalk',
-		version = '@BINTALK_VERSION_MAJOR@.@BINTALK_VERSION_MINOR@',
-		packages = ['bintalk'],
-		)
