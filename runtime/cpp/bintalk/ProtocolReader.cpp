@@ -53,7 +53,7 @@ BINTALK_PROTOCOLREADER_SIMPLE_IMP(UINT8);
 bool ProtocolReader::readBOOL(BinaryReader* r, BOOL& v, UINT32 maxArray, UINT32 maxValue)
 {
 	UINT8 v1 = v?1:0;
-	return r->read(&v, sizeof(BOOL));
+	return r->read(&v1, sizeof(BOOL));
 }
 
 bool ProtocolReader::readBOOLA(BinaryReader* r, std::vector<BOOL>& v, UINT32 maxArray, UINT32 maxValue)
