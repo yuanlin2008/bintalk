@@ -94,7 +94,7 @@ static const char* getFieldFuncName(Field& f)
 	case Field::FT_INT8:	n = "INT8";break;
 	case Field::FT_UINT8:	n = "UINT8";break;
 	case Field::FT_BOOL:	n = "BOOL";break;
-	case Field::FT_ENUM:	n = f.userType_->getEnum()->isEnum16()?"ENUM16":"ENUM";break;
+	case Field::FT_ENUM:	n = "ENUM16";break;
 	case Field::FT_STRING:	n = "STRING";break;
 	case Field::FT_BINARY:	n = "BINARY";break;
 	case Field::FT_USER:	n = "USER";break;

@@ -35,7 +35,7 @@ static const char* getFieldTypeName(Field& f)
     case Field::FT_BOOL:    return "bool";
     case Field::FT_STRING:  return "string";
     case Field::FT_USER:    return f.userType_->getNameC();
-	case Field::FT_ENUM:    return f.userType_->getEnum()->isEnum16()?"enum16":"enum";
+	case Field::FT_ENUM:    return "enum16";
     case Field::FT_BINARY:  return "binary";
     }
     return "";

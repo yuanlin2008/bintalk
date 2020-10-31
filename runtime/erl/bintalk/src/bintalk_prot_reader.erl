@@ -17,7 +17,6 @@
 -export([read_bool/2]).
 -export([read_string/2]).
 -export([read_binary/2]).
--export([read_enum/2]).
 -export([read_enum16/2]).
 -export([read_struct/2]).
 
@@ -79,9 +78,6 @@ read_binary(ValMax, B) ->
 	true = Len =< ValMax,
 	<<B1:Len/binary, R1/binary>> = R,
 	{B1, R1}.
-
--spec read_enum(non_neg_integer(), binary())->{non_neg_integer(), binary()}.
-read_enum(ValMax, <<V:8/little-unsigned-integer, R/binary>>) when (V =< ValMax)-> {V, R}.
 
 -spec read_enum16(non_neg_integer(), binary())->{non_neg_integer(), binary()}.
 read_enum16(ValMax, <<V:16/little-unsigned-integer, R/binary>>) when (V =< ValMax)-> {V, R}.

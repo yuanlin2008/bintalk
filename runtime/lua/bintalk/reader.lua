@@ -125,14 +125,6 @@ local function type_string(b, p, valMax)
 	return r, p+l
 end
 
----Read enum
----@param b string @buffer
----@param p number @buffer pointer.
----@return number, number
-local function type_enum(b, p)
-	return type_uint8(b, p, 0)
-end
-
 ---Read enum16
 ---@param b string @buffer
 ---@param p number @buffer pointer.
@@ -182,7 +174,6 @@ BintalkReader =
 	bool	= type_bool,
 	string	= type_string,
 	binary	= type_binary,
-	enum	= type_enum,
 	enum16	= type_enum16,
 
 	array	= type_array,
